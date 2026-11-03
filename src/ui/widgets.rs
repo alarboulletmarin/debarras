@@ -52,14 +52,21 @@ pub fn pattern_layer(pattern: Pattern, ink: Hsla, (w, h): (f32, f32)) -> Option<
     }
 }
 
-/// A square of the legend, filled with the pattern it explains.
+/// A small plot of the legend, drawn as the plan draws it: a rectangle, so that it is never read as a
+/// checkbox.
 pub fn swatch(pattern: Pattern, t: &Theme) -> AnyElement {
-    let d = div().relative().size(px(11.)).flex_none().border_1().border_color(t.ink.opacity(0.6)).overflow_hidden();
-    match pattern {
-        Pattern::Hatch => d.bg(pattern_slash(t.ink.opacity(0.5), 1., 3.)).into_any_element(),
-        Pattern::Dots => d.flex().items_center().justify_center().child(div().size(px(2.)).bg(t.ink.opacity(0.7))).into_any_element(),
-        Pattern::None => d.into_any_element(),
-    }
+    let (w, h) = (22., 13.);
+    div()
+        .relative()
+        .w(px(w))
+        .h(px(h))
+        .flex_none()
+        .bg(t.paper)
+        .border_1()
+        .border_color(t.ink.opacity(0.45))
+        .overflow_hidden()
+        .children(pattern_layer(pattern, t.ink, (w, h)))
+        .into_any_element()
 }
 
 /// Text kept on one line, cut with an ellipsis. Not `truncate()`: gpui 0.2.2 keeps the layout of a
@@ -97,6 +104,11 @@ pub fn checkbox(on: bool, t: &Theme) -> Div {
         .border_1()
         .border_color(t.ink)
         .when(on, |d| d.child(cross(7., 1.6, t.ink)))
+}
+
+/// A box partly ticked: some of what a folder holds, not all.
+pub fn checkbox_some(t: &Theme) -> Div {
+    checkbox(false, t).child(div().w(px(7.)).h(px(1.6)).bg(t.ink))
 }
 
 /// A small label in capitals, in the secondary colour.

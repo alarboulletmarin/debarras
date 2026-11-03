@@ -37,8 +37,12 @@ Click a hatched or dotted plot to tick it. The panel adds it to **Ticked to free
 
 The panel has two lists:
 
-- **Suggestions**: the largest plots Débarras marked, the safe ones first. Click one to tick or untick it.
-- **Ticked**: everything you ticked, wherever it is in the folder, largest first. Click one to untick it. A folder ticked covers what it holds: an item inside it is not counted twice.
+- **Suggestions**: every plot Débarras marked.
+- **Ticked**: everything you ticked, wherever it is in the folder. A folder ticked covers what it holds: an item inside it is not counted twice.
+
+Both are trees, largest first: the items are grouped under the folders that hold them, closed, with their size and how many items they hold. Click a folder's line to open or close it. Its box ticks everything it holds, or unticks it all when everything is ticked; a dash in the box means some of it is. Click an item's line to tick or untick it.
+
+**Why?**, by the lists, or a click on the legend, explains how the suggestions are chosen: every rule, and its reason. The [rules page](rules.md) lists them too.
 
 ## Free it
 

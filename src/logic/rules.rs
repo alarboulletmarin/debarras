@@ -45,10 +45,31 @@ impl Why {
             Why::Models => tr("Local AI models: large and downloadable again, but slow to get back.", "Modèles d'IA locaux : volumineux et retéléchargeables, mais longs à récupérer."),
             Why::Games => tr("Installed games: remove those you no longer play.", "Jeux installés : désinstallez ceux auxquels vous ne jouez plus."),
             Why::Containers => tr("Container images and volumes: their prune command frees the unused ones.", "Images et volumes de conteneurs : leur commande prune libère ceux qui ne servent plus."),
-            Why::DiskImage => tr("Disk image: often kept after an install.", "Image disque : souvent gardée après une installation."),
+            Why::DiskImage => tr("Disk image over 500 MB: often kept after an install.", "Image disque de plus de 500 Mo : souvent gardée après une installation."),
         }
     }
 }
+
+/// The rules as the interface lists them: what they look for (`parent/name` when the parent counts,
+/// `*.ext` for a file), and why. A test keeps them in step with `classify_dir` and `review_file`.
+pub const LISTED: &[(Reclaim, &[&str], Why)] = &[
+    (Reclaim::Safe, &["node_modules"], Why::NodeModules),
+    (Reclaim::Safe, &["target"], Why::RustTarget),
+    (Reclaim::Safe, &["__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"], Why::PythonCache),
+    (Reclaim::Safe, &[".gradle"], Why::Gradle),
+    (Reclaim::Safe, &[".next", ".turbo", ".svelte-kit", ".parcel-cache"], Why::WebBuild),
+    (Reclaim::Safe, &[".cargo/registry"], Why::CargoRegistry),
+    (Reclaim::Safe, &[".npm"], Why::NpmCache),
+    (Reclaim::Safe, &["Xcode/DerivedData"], Why::XcodeDerived),
+    (Reclaim::Safe, &[".cache"], Why::UserCache),
+    (Reclaim::Safe, &["Library/Caches"], Why::MacCaches),
+    (Reclaim::Safe, &["Local/Temp"], Why::WindowsTemp),
+    (Reclaim::Safe, &[".Trash", "Trash", "$Recycle.Bin"], Why::Trash),
+    (Reclaim::Review, &["ollama", "lm-studio", "huggingface"], Why::Models),
+    (Reclaim::Review, &["Steam"], Why::Games),
+    (Reclaim::Review, &["docker", "containers"], Why::Containers),
+    (Reclaim::Review, &["*.iso", "*.img", "*.dmg"], Why::DiskImage),
+];
 
 pub struct Verdict {
     pub category: Category,
@@ -107,6 +128,24 @@ pub fn review_file(name: &str, size: u64) -> Option<Why> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_listed_rules_are_the_rules_applied() {
+        for &(reclaim, names, why) in LISTED {
+            for name in names {
+                let found = match name.strip_prefix('*') {
+                    Some(ext) => review_file(&format!("image{ext}"), 600_000_000).map(|w| (Reclaim::Review, w)),
+                    None => {
+                        let (parent, name) = name.split_once('/').unwrap_or(("parent", name));
+                        classify_dir(name, parent).and_then(|v| v.why.map(|w| (v.reclaim, w)))
+                    }
+                };
+                assert_eq!(found, Some((reclaim, why)), "{name}");
+            }
+        }
+        let whys: std::collections::HashSet<_> = LISTED.iter().map(|r| r.2 as u8).collect();
+        assert_eq!(whys.len(), Why::DiskImage as usize + 1, "every reason is listed once");
+    }
 
     #[test]
     fn knows_what_can_go() {

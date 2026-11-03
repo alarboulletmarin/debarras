@@ -113,6 +113,7 @@ impl Shell {
         self.tick_count += 1;
         self.hovered = None;
         self.list = List::Ticked;
+        self.unfolded.clear();
         self.status = Some(said.into());
         cx.notify();
     }

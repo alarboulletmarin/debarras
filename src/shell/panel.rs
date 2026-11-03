@@ -4,78 +4,108 @@
 use gpui::{AnyElement, Div, FontWeight, div, pattern_slash, prelude::*, px, uniform_list};
 
 use super::*;
+use crate::logic::outline::{Row, outline};
 use crate::ui::{
     assets::MONO,
-    widgets::{Pattern, button, caps, checkbox, drag_window, figure, one_line, swatch},
+    widgets::{Pattern, button, caps, checkbox, checkbox_some, drag_window, figure, one_line, swatch},
 };
 
 pub(super) const PANEL_W: f32 = 360.;
 /// Height of a row of the lists: all the same, so that a long list only lays out what shows.
 const ROW: f32 = 46.;
 
-/// A row of the panel's lists, as the list shows it.
-pub(super) struct Line {
-    path: Vec<usize>,
-    name: String,
-    size: u64,
-    why: &'static str,
-}
-
 impl Shell {
-    /// The rows of the list shown: the suggestions, or what is ticked (what freeing would delete).
-    pub(super) fn lines(&self) -> Vec<Line> {
+    /// The lines of the list shown, as a tree: the suggestions, or what is ticked (what freeing would delete).
+    pub(super) fn lines(&self) -> Vec<Row> {
         let Some(disk) = &self.disk else { return Vec::new() };
-        match self.list {
-            List::Suggestions => disk
-                .suggestions
-                .iter()
-                .map(|s| Line { path: s.path.clone(), name: s.name.clone(), size: s.size, why: s.why.map_or("", |w| w.text()) })
-                .collect(),
-            List::Ticked => self
-                .to_free()
-                .into_iter()
-                .map(|(path, n)| Line { name: disk.root.short_name(&path), size: n.size, why: n.why.map_or("", |w| w.text()), path })
-                .collect(),
-        }
+        let items: Vec<Vec<usize>> = match self.list {
+            List::Suggestions => disk.suggestions.iter().map(|s| s.path.clone()).collect(),
+            List::Ticked => self.to_free().into_iter().map(|(path, _)| path).collect(),
+        };
+        outline(&disk.root, &items, &self.unfolded)
     }
 
-    fn render_line(&self, i: usize, line: Line, cx: &mut Context<Self>) -> AnyElement {
+    /// Ticks every item of a line, or unticks them all when they all are.
+    fn tick_all(&mut self, items: &[Vec<usize>], cx: &mut Context<Self>) {
+        if self.freeing {
+            return;
+        }
+        if items.iter().all(|p| self.ticked.contains(p)) {
+            items.iter().for_each(|p| _ = self.ticked.remove(p));
+        } else {
+            self.ticked.extend(items.iter().cloned());
+        }
+        self.tick_count += 1;
+        self.status = None;
+        cx.notify();
+    }
+
+    fn render_line(&self, i: usize, row: &Row, cx: &mut Context<Self>) -> AnyElement {
         let t = self.theme;
-        let on = self.list == List::Ticked || self.ticked.contains(&line.path);
         let paper = t.paper;
         let prefix = if self.list == List::Ticked { "ticked" } else { "suggestion" };
-        let path = line.path;
-        div()
+        let ticked = row.items.iter().filter(|p| self.ticked.contains(*p)).count();
+        let tick = if ticked == 0 {
+            checkbox(false, &t)
+        } else if ticked == row.items.len() {
+            checkbox(true, &t)
+        } else {
+            checkbox_some(&t)
+        };
+        let below = match row.open {
+            None => self.disk.as_ref().and_then(|d| d.root.at(&row.path)).and_then(|n| n.why).map_or("", |w| w.text()).to_string(),
+            Some(_) => lang::count(row.items.len() as u64, ("item", "items", "élément", "éléments")),
+        };
+        let items = row.items.clone();
+        let line = div()
             .id((prefix, i))
             .debug_selector(move || format!("{prefix}-{i}"))
             .w_full()
             .h(px(ROW))
             .flex()
-            .gap(px(10.))
+            .gap(px(8.))
             .pt(px(6.))
-            .px(px(6.))
+            .pl(px(6. + 14. * row.depth as f32))
+            .pr(px(6.))
             .cursor_pointer()
-            .hover(move |s| s.bg(paper))
-            .on_click(cx.listener(move |this, _, _, cx| this.toggle(path.clone(), cx)))
-            .child(checkbox(on, &t).mt(px(2.)))
-            .child(
-                div()
-                    .flex()
-                    .flex_col()
-                    .flex_1()
-                    .min_w_0()
-                    .gap(px(2.))
-                    .child(
-                        div()
-                            .flex()
-                            .justify_between()
-                            .gap(px(8.))
-                            .child(one_line(div().min_w_0().text_size(px(13.)).font_weight(FontWeight::MEDIUM)).child(line.name))
-                            .child(div().font_family(MONO).text_size(px(12.)).flex_none().child(lang::size(line.size))),
-                    )
-                    .child(one_line(div().text_size(px(11.)).text_color(t.soft)).child(line.why)),
-            )
-            .into_any_element()
+            .hover(move |s| s.bg(paper));
+        let line = match row.open {
+            // An item: the whole line ticks it.
+            None => line.child(div().w(px(9.)).flex_none()).child(checkbox_hit(tick, prefix, i)).on_click(cx.listener(move |this, _, _, cx| this.tick_all(&items, cx))),
+            // A folder: the line opens it, its box ticks all it holds.
+            Some(open) => {
+                let path = row.path.clone();
+                line.child(div().w(px(9.)).flex_none().pt(px(1.)).text_size(px(8.)).text_color(t.soft).child(if open { "▼" } else { "▶" }))
+                    .child(checkbox_hit(tick, prefix, i).on_click(cx.listener(move |this, _, _, cx| {
+                        cx.stop_propagation();
+                        this.tick_all(&items, cx);
+                    })))
+                    .on_click(cx.listener(move |this, _, _, cx| {
+                        if !this.unfolded.remove(&path) {
+                            this.unfolded.insert(path.clone());
+                        }
+                        cx.notify();
+                    }))
+            }
+        };
+        line.child(
+            div()
+                .flex()
+                .flex_col()
+                .flex_1()
+                .min_w_0()
+                .gap(px(2.))
+                .child(
+                    div()
+                        .flex()
+                        .justify_between()
+                        .gap(px(8.))
+                        .child(one_line(div().min_w_0().text_size(px(13.)).font_weight(FontWeight::MEDIUM)).child(row.label.clone()))
+                        .child(div().font_family(MONO).text_size(px(12.)).flex_none().child(lang::size(row.size))),
+                )
+                .child(one_line(div().text_size(px(11.)).text_color(t.soft)).child(below)),
+        )
+        .into_any_element()
     }
 
     pub(super) fn render_panel(&self, _height: f32, cx: &mut Context<Self>) -> Div {
@@ -84,7 +114,8 @@ impl Shell {
         let total = disk.root.size;
         let picked = self.ticked_total();
         let share = if total == 0 { 0. } else { (picked as f64 / total as f64).min(1.) as f32 };
-        let lines = self.lines().len();
+        let rows = std::rc::Rc::new(self.lines());
+        let lines = rows.len();
         let ticked = self.to_free().len();
         let legend = |pattern: Pattern, text: &'static str| div().flex().items_center().gap(px(6.)).child(swatch(pattern, &t)).child(div().text_size(px(11.5)).text_color(t.soft).child(text));
         let source = match &disk.source {
@@ -165,12 +196,17 @@ impl Shell {
                     .child(div().h_full().w(gpui::relative(share)).bg(pattern_slash(t.ink.opacity(0.5), 1., 4.))),
             )
             .child(div().mt(px(6.)).flex().justify_end().font_family(MONO).text_size(px(11.)).text_color(t.soft).child(format!("{} {}", lang::share(picked, total), tr("of the total", "du total"))))
+            // The legend: a click explains it.
             .child(
                 div()
+                    .id("legend")
+                    .debug_selector(|| "legend".into())
                     .mt(px(14.))
                     .flex()
                     .flex_wrap()
-                    .gap(px(18.))
+                    .gap(px(16.))
+                    .cursor_pointer()
+                    .on_click(cx.listener(|this, _, _, cx| this.toggle_overlay(Overlay::Rules, cx)))
                     .child(legend(Pattern::Hatch, tr("without loss", "sans perte")))
                     .child(legend(Pattern::Dots, tr("to review", "à examiner")))
                     .child(legend(Pattern::None, tr("to keep", "à garder"))),
@@ -182,7 +218,9 @@ impl Shell {
                     .flex()
                     .gap(px(18.))
                     .child(tab("tab-suggestions", List::Suggestions, format!("{} · {}", tr("Suggestions", "Suggestions"), lang::number(disk.suggestions.len() as u64))))
-                    .child(tab("tab-ticked", List::Ticked, format!("{} · {}", tr("Ticked", "Coché"), lang::number(ticked as u64)))),
+                    .child(tab("tab-ticked", List::Ticked, format!("{} · {}", tr("Ticked", "Coché"), lang::number(ticked as u64))))
+                    .child(div().flex_1())
+                    .child(small("rules-button", tr("Why?", "Pourquoi ?").to_string()).text_size(px(11.)).on_click(cx.listener(|this, _, _, cx| this.toggle_overlay(Overlay::Rules, cx)))),
             )
             .child(
                 div()
@@ -196,10 +234,7 @@ impl Shell {
                             uniform_list(
                                 "lines",
                                 lines,
-                                cx.processor(|this, range: std::ops::Range<usize>, _, cx| {
-                                    let lines = this.lines();
-                                    lines.into_iter().enumerate().skip(range.start).take(range.len()).map(|(i, line)| this.render_line(i, line, cx)).collect::<Vec<_>>()
-                                }),
+                                cx.processor(move |this, range: std::ops::Range<usize>, _, cx| range.map(|i| this.render_line(i, &rows[i], cx)).collect::<Vec<_>>()),
                             )
                             .track_scroll(self.lines_scroll.clone())
                             .size_full(),
@@ -218,6 +253,11 @@ impl Shell {
                     .child(small("help-button", tr("Help", "Aide").to_string()).on_click(cx.listener(|this, _, _, cx| this.toggle_overlay(Overlay::Help, cx)))),
             )
     }
+}
+
+/// A line's box, which tests click by `{prefix}-{i}-box`.
+fn checkbox_hit(tick: Div, prefix: &'static str, i: usize) -> gpui::Stateful<Div> {
+    div().id(("box", i)).debug_selector(move || format!("{prefix}-{i}-box")).flex_none().mt(px(2.)).child(tick)
 }
 
 /// How long the scan took: `0.4 s`, `12 s`, `3 min 05 s`.

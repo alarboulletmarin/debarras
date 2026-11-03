@@ -63,6 +63,7 @@ impl Render for Shell {
             .when_some(self.overlay, |d, overlay| {
                 d.child(match overlay {
                     Overlay::Help => self.render_help(room, cx).into_any_element(),
+                    Overlay::Rules => self.render_rules(room, cx).into_any_element(),
                     Overlay::Settings => self.render_settings(room, cx).into_any_element(),
                     Overlay::Confirm => self.render_confirm(room, cx).into_any_element(),
                 })

@@ -47,6 +47,7 @@ The test `layers_only_depend_downwards` fails when a file breaks this rule. A fi
 | the window: state, scans, gestures | `shell/mod.rs` |
 | the plan's surroundings: path, dimension line, title block, pointer | `shell/plan.rs` |
 | the side panel, its lists (suggestions, ticked) | `shell/panel.rs` |
+| the lists as a tree of folders | `logic/outline.rs` |
 | the summary before freeing, the deletion, the plan after it | `shell/free.rs` |
 | the settings window | `shell/settings.rs` |
 | the start screen, the scan in progress, a failure | `shell/start.rs` |

@@ -37,9 +37,9 @@ fn the_demo_opens_folders_ticks_and_goes_back(cx: &mut TestAppContext) {
     click(cx, point(px(cache.rect.x + 4.), px(cache.rect.y + 4.)));
     assert_eq!(shell.read_with(cx, |s, _| s.ticked_total()), before);
 
-    // A suggestion of the panel does the same.
-    click_on(cx, "suggestion-0");
-    assert!(shell.read_with(cx, |s, _| s.ticked_total()) < before);
+    // The box of a line of the panel does the same.
+    click_on(cx, "suggestion-0-box");
+    assert_ne!(shell.read_with(cx, |s, _| s.ticked_total()), before);
 
     // Escape at the root does nothing; the right button goes back too.
     cx.simulate_keystrokes("escape");
@@ -209,6 +209,6 @@ fn the_pointer_never_draws_the_plots_again(cx: &mut TestAppContext) {
     assert!(seen.len() > 5, "the pointer went over {} plots only", seen.len());
     assert_eq!(plot.read_with(cx, |p, _| p.renders), before, "hovering drew the plots again");
     // A tick does draw them again: the hatching gets darker.
-    click_on(cx, "suggestion-0");
+    click_on(cx, "suggestion-0-box");
     assert!(plot.read_with(cx, |p, _| p.renders) > before);
 }

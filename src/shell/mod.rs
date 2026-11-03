@@ -62,14 +62,11 @@ pub struct Disk {
     pub suggestions: Vec<Suggestion>,
 }
 
-/// An item worth freeing, as the panel lists it.
+/// An item worth freeing.
 #[derive(Clone)]
 pub struct Suggestion {
     pub path: Vec<usize>,
-    pub name: String,
-    pub size: u64,
     pub reclaim: Reclaim,
-    pub why: Option<crate::logic::rules::Why>,
 }
 
 impl Disk {
@@ -77,7 +74,7 @@ impl Disk {
         let suggestions = root
             .suggestions()
             .into_iter()
-            .map(|(path, n)| Suggestion { name: root.short_name(&path), size: n.size, reclaim: n.reclaim, why: n.why, path })
+            .map(|(path, n)| Suggestion { reclaim: n.reclaim, path })
             .collect();
         Disk { root, source, files, errors, took, suggestions }
     }
@@ -97,6 +94,8 @@ struct PlanKey {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Overlay {
     Help,
+    /// How the suggestions are chosen: every rule and its reason.
+    Rules,
     Settings,
     /// The summary of what is ticked, before it is freed.
     Confirm,
@@ -137,6 +136,8 @@ pub struct Shell {
     /// Ticked items are being deleted, in the background: the ticks stay as they are meanwhile.
     freeing: bool,
     lines_scroll: gpui::UniformListScrollHandle,
+    /// The folders of the lists opened (or closed, for one alone at the top) by the user.
+    unfolded: HashSet<Vec<usize>>,
     /// A message under the suggestions (what a button did, what failed).
     status: Option<SharedString>,
     /// The window edge under the pointer, where the app draws its frame (Linux).
@@ -176,6 +177,7 @@ impl Shell {
             list: List::Suggestions,
             freeing: false,
             lines_scroll: gpui::UniformListScrollHandle::new(),
+            unfolded: HashSet::new(),
             status: None,
             edge: None,
             plot: cx.new(|_| Plot::new()),
@@ -218,6 +220,7 @@ impl Shell {
         self.hovered = None;
         self.status = None;
         self.list = List::Suggestions;
+        self.unfolded.clear();
         self.stage = Stage::Plan;
         cx.notify();
     }

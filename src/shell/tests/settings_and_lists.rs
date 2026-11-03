@@ -8,22 +8,71 @@ fn settings_file() -> Prefs {
     Prefs::parse(&fs::read_to_string(platform::config_dir().join("settings")).unwrap_or_default())
 }
 
+/// What the list shows: (depth, label, items ticked, items, open).
+fn rows(shell: &Entity<Shell>, cx: &mut VisualTestContext) -> Vec<(usize, String, usize, usize, Option<bool>)> {
+    shell.read_with(cx, |s, _| s.lines().into_iter().map(|r| (r.depth, r.label, r.items.iter().filter(|p| s.ticked.contains(*p)).count(), r.items.len(), r.open)).collect())
+}
+
+#[gpui::test]
+fn the_suggestions_are_a_tree_of_folders(cx: &mut TestAppContext) {
+    let (_root, shell, cx, _config) = open(cx, "arbre", Start::Demo);
+    // Folders closed, largest first: a few lines for every suggestion.
+    let top = rows(&shell, cx);
+    let all = shell.read_with(cx, |s, _| s.disk.as_ref().unwrap().suggestions.len());
+    assert_eq!(top.iter().map(|r| r.3).sum::<usize>(), all, "every suggestion is under a line");
+    assert!(top.len() < all);
+    let folder = top.iter().position(|r| r.4 == Some(false) && r.3 >= 2).expect("a closed folder");
+    let at = |i: usize| -> &'static str { Box::leak(format!("suggestion-{i}").into_boxed_str()) };
+    let boxed = |i: usize| -> &'static str { Box::leak(format!("suggestion-{i}-box").into_boxed_str()) };
+    // A click on the line opens the folder, its items under it; a second closes it.
+    click_on(cx, at(folder));
+    let opened = rows(&shell, cx);
+    assert_eq!(opened[folder].4, Some(true));
+    assert_eq!(opened.len(), top.len() + opened.iter().filter(|r| r.0 == 1).count());
+    assert!(opened.iter().filter(|r| r.0 == 1).count() >= 2);
+    assert!(cx.debug_bounds(at(folder + 1)).unwrap().left() > cx.debug_bounds(at(folder)).unwrap().left() - px(1.), "the items are under it");
+    assert!(cx.debug_bounds(boxed(folder + 1)).unwrap().left() > cx.debug_bounds(boxed(folder)).unwrap().left(), "and set in");
+    // The folder's box ticks all it holds, then unticks them all, without closing it.
+    let before = shell.read_with(cx, |s, _| s.ticked_total());
+    // Partly ticked, a click ticks all; all ticked, it unticks all.
+    for _ in 0..2 {
+        if rows(&shell, cx)[folder].2 > 0 {
+            click_on(cx, boxed(folder));
+        }
+    }
+    assert_eq!(rows(&shell, cx)[folder].2, 0);
+    click_on(cx, boxed(folder));
+    assert_eq!(rows(&shell, cx)[folder].2, opened[folder].3, "all ticked");
+    assert!(rows(&shell, cx).iter().filter(|r| r.0 == 1).all(|r| r.2 == 1));
+    click_on(cx, boxed(folder));
+    assert_eq!(rows(&shell, cx)[folder].2, 0, "all unticked");
+    assert_eq!(rows(&shell, cx)[folder].4, Some(true), "the box does not close the folder");
+    // An item's line ticks it: the folder is partly ticked.
+    click_on(cx, at(folder + 1));
+    assert_eq!(rows(&shell, cx)[folder].2, 1);
+    assert_ne!(shell.read_with(cx, |s, _| s.ticked_total()), before);
+    click_on(cx, at(folder));
+    assert_eq!(rows(&shell, cx).len(), top.len(), "closed again");
+}
+
 #[gpui::test]
 fn the_ticked_list_recalls_every_tick(cx: &mut TestAppContext) {
     let (_root, shell, cx, _config) = open(cx, "coche", Start::Demo);
     let ticked = shell.read_with(cx, |s, _| s.to_free().len());
     assert!(ticked >= 2);
     click_on(cx, "tab-ticked");
-    assert!(cx.debug_bounds(Box::leak(format!("ticked-{}", ticked - 1).into_boxed_str())).is_some(), "every ticked item is listed");
-    assert!(cx.debug_bounds(Box::leak(format!("ticked-{ticked}").into_boxed_str())).is_none());
-    // Largest first; a click unticks.
-    let sizes: Vec<u64> = shell.read_with(cx, |s, _| s.to_free().iter().map(|(_, n)| n.size).collect());
+    let lines = rows(&shell, cx);
+    assert_eq!(lines.iter().map(|r| r.3).sum::<usize>(), ticked, "every ticked item is under a line");
+    assert!(lines.iter().all(|r| r.2 == r.3), "all of them ticked");
+    assert!(cx.debug_bounds(Box::leak(format!("ticked-{}", lines.len() - 1).into_boxed_str())).is_some());
+    // Largest first; a box unticks the line.
+    let sizes: Vec<u64> = shell.read_with(cx, |s, _| s.lines().iter().map(|r| r.size).collect());
     assert!(sizes.windows(2).all(|w| w[0] >= w[1]));
-    click_on(cx, "ticked-0");
-    assert_eq!(shell.read_with(cx, |s, _| s.to_free().len()), ticked - 1);
+    click_on(cx, "ticked-0-box");
+    assert_eq!(shell.read_with(cx, |s, _| s.to_free().len()), ticked - lines[0].3);
     // Everything unticked: the list says how to tick.
     while shell.read_with(cx, |s, _| !s.ticked.is_empty()) {
-        click_on(cx, "ticked-0");
+        click_on(cx, "ticked-0-box");
     }
     assert!(shell.read_with(cx, |s, _| s.lines().is_empty()));
     click_on(cx, "tab-suggestions");
@@ -124,4 +173,22 @@ fn a_click_over_the_window_never_reaches_the_plan_below(cx: &mut TestAppContext)
     cx.simulate_keystrokes("escape f1");
     click_on(cx, "help");
     assert_eq!(before(cx), start);
+}
+
+#[gpui::test]
+fn the_rules_behind_the_suggestions_are_explained(cx: &mut TestAppContext) {
+    let (_root, shell, cx, _config) = open(cx, "regles", Start::Demo);
+    let start = shell.read_with(cx, |s, _| (s.ticked.clone(), s.shown.clone()));
+    // From the link by the lists, and from the legend.
+    for opener in ["rules-button", "legend"] {
+        click_on(cx, opener);
+        assert_eq!(overlay(&shell, cx), Some(Overlay::Rules), "{opener}");
+        let sheet = cx.debug_bounds("rules").unwrap();
+        assert!(sheet.top() >= px(0.) && sheet.bottom() <= px(900.), "the sheet fits the window");
+        click_on(cx, "rules");
+        assert_eq!(overlay(&shell, cx), Some(Overlay::Rules), "a click inside keeps it");
+        cx.simulate_keystrokes("escape");
+        assert_eq!(overlay(&shell, cx), None);
+    }
+    assert_eq!(shell.read_with(cx, |s, _| (s.ticked.clone(), s.shown.clone())), start, "nothing reached the plan");
 }

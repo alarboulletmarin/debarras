@@ -26,7 +26,7 @@ Débarras marks a folder or a file only when its name says, without doubt, what 
 | `ollama`, `lm-studio`, `huggingface` | Local AI models: large and downloadable again, but slow to get back. |
 | `Steam` | Installed games: remove those you no longer play. |
 | `docker`, `containers` | Container images and volumes: their prune command frees the unused ones. |
-| `.iso`, `.img`, `.dmg` files over 500 MB | Disk image: often kept after an install. |
+| `.iso`, `.img`, `.dmg` files over 500 MB | Disk image over 500 MB: often kept after an install. |
 
 ## Everything else
 

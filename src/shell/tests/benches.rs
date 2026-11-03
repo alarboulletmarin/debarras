@@ -53,7 +53,24 @@ fn bench_scan() {
         let files = progress.files.load(std::sync::atomic::Ordering::Relaxed);
         println!("scan ({run}): {files} files, {} ({} bytes) in {took:.2?}", crate::lang::size(root.size), root.size);
         let built = Instant::now();
-        let _ = Disk::new(root, Source::Demo, files, 0, took);
+        let disk = Disk::new(root, Source::Demo, files, 0, took);
         println!("suggestions in {:.1} ms", built.elapsed().as_secs_f64() * 1000.);
+        // The panel's tree, built at every frame: closed, then with every folder open.
+        let items: Vec<Vec<usize>> = disk.suggestions.iter().map(|s| s.path.clone()).collect();
+        let tree = Instant::now();
+        let top = crate::logic::outline::outline(&disk.root, &items, &Default::default());
+        let closed = tree.elapsed();
+        let mut open: std::collections::HashSet<Vec<usize>> = Default::default();
+        loop {
+            let rows = crate::logic::outline::outline(&disk.root, &items, &open);
+            let before = open.len();
+            open.extend(rows.into_iter().filter(|r| r.open == Some(false)).map(|r| r.path));
+            if open.len() == before {
+                break;
+            }
+        }
+        let tree = Instant::now();
+        let all = crate::logic::outline::outline(&disk.root, &items, &open);
+        println!("tree of {} items: {} lines closed in {closed:.1?}, {} lines open in {:.1?}", items.len(), top.len(), all.len(), tree.elapsed());
     }
 }
