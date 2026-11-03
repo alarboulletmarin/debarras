@@ -7,7 +7,7 @@ use gpui::{Action, App, KeyBinding};
 use crate::{actions::*, lang::tr};
 
 /// The key of commands: `Cmd` on macOS, `Ctrl` elsewhere.
-const MOD: &str = if cfg!(target_os = "macos") { "cmd" } else { "ctrl" };
+pub(super) const MOD: &str = if cfg!(target_os = "macos") { "cmd" } else { "ctrl" };
 
 /// Every binding, as (keys, action). An action may have several; the first is shown first.
 pub fn defaults() -> Vec<(String, Box<dyn Action>)> {

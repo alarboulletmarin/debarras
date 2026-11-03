@@ -75,12 +75,17 @@ fn line_value<'a>(text: &'a str, key: &str) -> Option<&'a str> {
 mod tests {
     use super::*;
 
+    /// An absolute path on every system: `/home` is not one on Windows, `C:/home` is.
+    fn abs(path: &str) -> String {
+        if cfg!(windows) { format!("C:{path}") } else { path.to_string() }
+    }
+
     #[test]
     fn reads_and_writes_settings() {
-        let prefs = Prefs::parse("theme=Nord\nbogus\nold=1\nlanguage=en\nlast=/home/moi/projets été\n");
+        let prefs = Prefs::parse(&format!("theme=Nord\nbogus\nold=1\nlanguage=en\nlast={}\n", abs("/home/moi/projets été")));
         assert_eq!(prefs.theme, "Nord");
         assert_eq!(prefs.language, Language::English);
-        assert_eq!(prefs.last, Some(Last::Folder("/home/moi/projets été".into())));
+        assert_eq!(prefs.last, Some(Last::Folder(abs("/home/moi/projets été").into())));
         assert_eq!(Prefs::parse(&prefs.to_text()), prefs);
         for empty in ["", "theme=", "theme", "\n\n", "=Nord", "language=", "language=klingon", "last="] {
             assert_eq!(Prefs::parse(empty), Prefs::default(), "{empty:?}");
@@ -91,7 +96,7 @@ mod tests {
 
     #[test]
     fn remembers_the_last_folder_as_it_is_named() {
-        let at = |path: &str| Prefs { last: Some(Last::Folder(path.into())), ..Prefs::default() };
+        let at = |path: &str| Prefs { last: Some(Last::Folder(abs(path).into())), ..Prefs::default() };
         // Spaces at either end, `=`, `|`, `\`, quotes and emoji come back unchanged.
         for path in ["/home/moi/ dossier ", "/a=b/c|d\\e \"f\" 🌞", "/"] {
             assert_eq!(Prefs::parse(&at(path).to_text()), at(path), "{path:?}");
@@ -99,7 +104,7 @@ mod tests {
         assert_eq!(Prefs::parse("last=demo\r\n").last, Some(Last::Demo));
         assert_eq!(Prefs::parse("last=/a\nlast=/b\n").last, Some(Last::Folder("/b".into())), "the last line wins");
         // Not remembered: a relative path, or one with a line break.
-        assert_eq!(at("relative/path").to_text(), "");
+        assert_eq!(Prefs { last: Some(Last::Folder("relative/path".into())), ..Prefs::default() }.to_text(), "");
         assert_eq!(at("/a\nb").to_text(), "");
     }
 }

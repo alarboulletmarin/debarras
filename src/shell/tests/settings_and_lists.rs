@@ -103,7 +103,7 @@ fn the_settings_choose_the_theme_and_the_language(cx: &mut TestAppContext) {
     // A click beside the settings closes them, as Escape does; the shortcut opens them again.
     click(cx, point(px(20.), px(20.)));
     assert_eq!(overlay(&shell, cx), None);
-    cx.simulate_keystrokes("ctrl-,");
+    cx.simulate_keystrokes(&format!("{}-,", super::super::keymap::MOD));
     assert_eq!(overlay(&shell, cx), Some(Overlay::Settings));
     cx.simulate_keystrokes("escape");
     assert_eq!(overlay(&shell, cx), None);
