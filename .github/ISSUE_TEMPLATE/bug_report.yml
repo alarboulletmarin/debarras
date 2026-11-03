@@ -1,0 +1,42 @@
+name: Bug report
+description: Something does not work as it should
+labels: [bug]
+body:
+  - type: textarea
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Scan a folder that contains…
+        2. Click…
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: Débarras version
+      description: Shown at the bottom of the help panel.
+    validations:
+      required: true
+  - type: dropdown
+    attributes:
+      label: System
+      options:
+        - Linux (Wayland)
+        - Linux (X11)
+        - macOS
+        - Windows
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: How Débarras was installed
+      placeholder: Arch package, installer, zip, dmg, built from source…
+  - type: textarea
+    attributes:
+      label: Anything else
+      description: The folder that triggers the problem (its shape, not its content), a message shown by the app.

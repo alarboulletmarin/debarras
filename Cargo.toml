@@ -1,0 +1,29 @@
+[package]
+name = "debarras"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+description = "See what fills your disk, and free what can go"
+license = "MIT"
+repository = "https://github.com/alarboulletmarin/debarras"
+
+[dependencies]
+gpui = "0.2.2"
+# Already pulled by gpui, at the same version: the folders are read in parallel.
+rayon = "1.11.0"
+
+[dev-dependencies]
+gpui = { version = "0.2.2", features = ["test-support"] }
+
+# Already pulled by gpui, at the same version: the icon of debarras.exe.
+[target.'cfg(windows)'.build-dependencies]
+embed-resource = "3.0"
+
+# GPUI unoptimized is slow to draw: in debug builds, the dependencies are optimized anyway.
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

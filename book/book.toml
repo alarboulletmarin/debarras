@@ -1,0 +1,19 @@
+[book]
+title = "Débarras user guide"
+description = "How to use Débarras, a disk-space map that shows what fills your disk and what can go."
+language = "en"
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+git-repository-url = "https://github.com/alarboulletmarin/debarras"
+edit-url-template = "https://github.com/alarboulletmarin/debarras/edit/main/book/{path}"
+site-url = "/debarras/guide/"
+no-section-label = true
+
+[output.html.fold]
+enable = true
+level = 1

@@ -1,0 +1,22 @@
+# Rust
+/target/
+
+# ctags index
+/tags
+
+# The prototype this app grew from, kept locally
+/archive-claude
+
+# makepkg: build tree, downloaded sources, packages, logs
+/pkg/
+/src/debarras-*
+/*.tar.gz
+/*.pkg.tar.*
+/*.src.tar.*
+/*.log
+
+# User guide, built by `make docs`
+/book/book/
+
+# Claude Code local caches
+/.claude/

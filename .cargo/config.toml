@@ -1,0 +1,3 @@
+# Windows: the C runtime is linked in, so that debarras.exe starts without the Visual C++ redistributable.
+[target.'cfg(all(windows, target_env = "msvc"))']
+rustflags = ["-C", "target-feature=+crt-static"]

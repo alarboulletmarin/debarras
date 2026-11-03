@@ -1,0 +1,15 @@
+[Desktop Entry]
+Type=Application
+Name=Débarras
+GenericName=Disk usage
+GenericName[fr]=Occupation du disque
+Comment=See what fills your disk, and free what can go
+Comment[fr]=Voyez ce qui remplit votre disque, et libérez ce qui peut partir
+Exec=debarras
+Icon=dev.andrea.Debarras
+Terminal=false
+Categories=System;Filesystem;
+Keywords=disk;space;usage;clean;treemap;
+Keywords[fr]=disque;espace;occupation;nettoyer;treemap;
+StartupNotify=true
+StartupWMClass=dev.andrea.Debarras
