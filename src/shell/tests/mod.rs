@@ -3,7 +3,9 @@
 //! in their own modules instead.
 
 mod benches;
+mod freeing;
 mod journeys;
+mod settings_and_lists;
 mod shortcuts_page;
 mod window;
 
@@ -110,6 +112,14 @@ pub(super) fn click(cx: &mut VisualTestContext, at: gpui::Point<Pixels>) {
     cx.simulate_mouse_move(at, None, Modifiers::none());
     cx.simulate_click(at, Modifiers::none());
     cx.run_until_parked();
+    // The window draws what changed at its next event: a move where the pointer already is.
+    cx.simulate_mouse_move(at, None, Modifiers::none());
+}
+
+/// What is drawn over the window. gpui 0.2.2 never forgets a `debug_selector` once drawn
+/// (`Frame::clear` keeps `debug_bounds`): that something is gone is read from the state.
+pub(super) fn overlay(shell: &Entity<Shell>, cx: &mut VisualTestContext) -> Option<Overlay> {
+    shell.read_with(cx, |s, _| s.overlay)
 }
 
 pub(super) fn click_on(cx: &mut VisualTestContext, selector: &'static str) {

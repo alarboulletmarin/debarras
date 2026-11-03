@@ -15,11 +15,9 @@ See what fills your disk, and free what can go. Débarras draws a folder as an a
 - **The whole folder at a glance.** Every item is a plot whose area is its size. Large folders open in place, three levels deep.
 - **What can go is drawn.** Hatching: rebuilt or downloaded again when needed (`node_modules`, `target`, caches, the trash). Dots: large, for you to judge (disk images, AI models, containers). Each plot says why.
 - **Nothing leaves your computer.** No account, no network, no telemetry. The scan reads sizes, never the content of a file.
-- **Nothing is deleted behind your back.** You tick what to free and see the total before anything happens.
+- **Nothing is deleted behind your back.** You tick what to free, review the summary of every item, then move it to the trash or delete it for good.
 - **Fast.** The folders are read in parallel; hovering the plan costs a couple of milliseconds a frame. [Figures](book/src/performance.md)
-- **Yours to dress.** 13 themes, light and dark, English and French.
-
-> Version 0.1 shows and ticks; it does not delete yet. Moving the ticked items to the system's trash, after a summary, comes next.
+- **Yours to dress.** 13 themes, light and dark, English and French, chosen in the settings.
 
 ## Install
 

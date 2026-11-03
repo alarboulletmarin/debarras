@@ -2,7 +2,7 @@
 
 ## The start screen
 
-Débarras opens on three choices:
+The first time, Débarras opens on three choices:
 
 - **Scan** followed by your home folder: the usual place where space goes.
 - **Choose a folder…** (`Ctrl+O`, `Cmd+O` on macOS): any folder, an external disk, a project.
@@ -15,6 +15,8 @@ debarras ~/projects     # scan a folder
 debarras --demo         # open the demo
 debarras --help         # every option
 ```
+
+The next times, it opens what you looked at last: the same folder, scanned again, or the demo. A folder gone since then brings back the start screen. To look elsewhere, click **Open…** at the bottom of the panel (`Ctrl+O`).
 
 ## While it scans
 
@@ -31,12 +33,27 @@ A folder Débarras cannot read does not stop the scan: it is skipped, and the pa
 
 ## Tick what can go
 
-Click a hatched or dotted plot to tick it. The panel adds it to **Ticked to free**, with the share of the disk it represents. Click it again to untick it.
+Click a hatched or dotted plot to tick it. The panel adds it to **Ticked to free**, with the share of the disk it represents. Click it again to untick it. What can go without loss is ticked from the start.
 
-The **Suggestions** list on the right gathers the largest plots Débarras marked, the safe ones first. Click a suggestion to tick it too.
+The panel has two lists:
 
-**Move to the trash** does not delete anything yet in this version: it tells you how many items you ticked and their total. Delete those folders yourself, from your file manager or with the tool that made them (`cargo clean`, `docker system prune`…).
+- **Suggestions**: the largest plots Débarras marked, the safe ones first. Click one to tick or untick it.
+- **Ticked**: everything you ticked, wherever it is in the folder, largest first. Click one to untick it. A folder ticked covers what it holds: an item inside it is not counted twice.
+
+## Free it
+
+Click **Free**. A summary lists every ticked item, its place on the disk and its size, with the total. Then choose:
+
+- **Move to the trash**: the items go to the system's trash, where you can still get them back. The room comes back only once the trash is emptied.
+- **Delete for good**: the room comes back at once. There is no way back.
+- **Cancel** (or `Esc`): nothing happens.
+
+The plan follows at once, without a new scan, and the panel says what was freed. An item that could not be freed, because it is gone or you may not delete it, stays ticked, and the panel says why.
+
+The trash itself (`.local/share/Trash`, `.Trash`) can only be deleted for good: that is how a trash is emptied.
+
+In the demo, freeing only changes the plan: nothing on your disk is touched.
 
 ## Scan again
 
-After you freed space, press `F5` (or `Ctrl+R`) to scan the same folder again.
+After you freed space elsewhere, press `F5` (or `Ctrl+R`) to scan the same folder again.

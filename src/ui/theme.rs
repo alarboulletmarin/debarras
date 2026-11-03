@@ -127,7 +127,7 @@ mod tests {
     use super::*;
 
     fn every_theme() -> impl Iterator<Item = Theme> {
-        THEMES.iter().map(|(name, _)| Theme::of(&Prefs { theme: name.to_string() }, WindowAppearance::Light))
+        THEMES.iter().map(|(name, _)| Theme::of(&Prefs { theme: name.to_string(), ..Prefs::default() }, WindowAppearance::Light))
     }
 
     /// In each theme every text reads (4.5:1) where it is written: names on the paper, the panel and every tint;
@@ -154,12 +154,12 @@ mod tests {
         let light = Theme::of(&Prefs::default(), WindowAppearance::Light);
         assert_eq!((dark.name, dark.dark, light.name, light.dark), ("Débarras Dark", true, "Débarras Light", false));
         // An unknown name, from an older version or a typo, falls back on the system's.
-        assert_eq!(Theme::of(&Prefs { theme: "Inconnu".into() }, WindowAppearance::Dark).name, "Débarras Dark");
-        assert_eq!(Theme::of(&Prefs { theme: "Nord".into() }, WindowAppearance::Light).name, "Nord");
+        assert_eq!(Theme::of(&Prefs { theme: "Inconnu".into(), ..Prefs::default() }, WindowAppearance::Dark).name, "Débarras Dark");
+        assert_eq!(Theme::of(&Prefs { theme: "Nord".into(), ..Prefs::default() }, WindowAppearance::Light).name, "Nord");
         // The theme key goes round every theme and back.
         let mut name = light.name;
         for _ in 0..THEMES.len() {
-            name = Theme::of(&Prefs { theme: name.into() }, WindowAppearance::Light).next_name();
+            name = Theme::of(&Prefs { theme: name.into(), ..Prefs::default() }, WindowAppearance::Light).next_name();
         }
         assert_eq!(name, light.name);
     }

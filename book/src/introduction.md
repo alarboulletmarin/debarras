@@ -10,7 +10,7 @@ It also tells you what can go:
 - **Dots** mark what is large and worth a look: games, local AI models, container images, old disk images. Only you can judge those.
 - Plain plots are yours. Débarras says nothing about them.
 
-Débarras only reads. It never deletes a file on its own, and in this version it deletes nothing at all: ticking a plot adds it to a total, so you know what freeing it would give.
+Débarras never deletes a file on its own. Ticking a plot adds it to a total, so you know what freeing it would give; then a summary lists every item, and you choose to move them to the trash or to delete them for good.
 
 The scan stays on one disk, follows no symbolic link, and sends nothing anywhere. There is no account, no telemetry and no network access.
 

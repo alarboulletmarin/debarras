@@ -14,6 +14,7 @@ Every line of the help panel (`F1`), with the keys of Linux and Windows. On macO
 | `O` | Show the hovered item in the file manager |
 | Hatching | Can go without loss: rebuilt or downloaded again when needed |
 | Dots | Large, to review: you judge |
+| Free | Sums up what is ticked, then moves it to the trash or deletes it for good |
 
 ## Folders
 
@@ -26,6 +27,7 @@ Every line of the help panel (`F1`), with the keys of Linux and Windows. On macO
 
 | Keys | Action |
 |---|---|
+| `Ctrl+,` | Settings: theme and language (also the button at the bottom of the panel) |
 | `T` | Next theme (kept for the next launch) |
 | `F1` | This help |
 | `Ctrl+Q` | Quit |

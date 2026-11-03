@@ -1,8 +1,10 @@
 # Settings and appearance
 
+Click **Settings** at the bottom of the panel, or press `Ctrl+,` (`Cmd+,` on macOS). Every choice applies at once and is kept for the next launch. `Esc`, or a click outside them, closes the settings.
+
 ## Themes
 
-Press `T` to switch to the next theme. Débarras remembers it for the next launch.
+Each theme is shown in its own colours: click one to use it. **Like the system** follows your system's appearance, light or dark. `T` also switches to the next theme, without opening the settings.
 
 The two house themes, **Débarras Light** and **Débarras Dark**, follow your system's appearance until you choose a theme. The others are: Dracula, One Dark, Gruvbox Dark, Nord, Catppuccin Mocha, Tokyo Night, Rosé Pine, Solarized Dark, Solarized Light, Catppuccin Latte and Gruvbox Light.
 
@@ -10,21 +12,18 @@ Every theme is checked by a test: text reads at a contrast of at least 4.5:1 on 
 
 ## Language
 
-Débarras speaks English and French. It follows your system:
+Débarras speaks English and French. Choose **English** or **Français** in the settings, or **System** to follow your system:
 
 - from a terminal, the first of `LC_ALL`, `LC_MESSAGES` and `LANG` that is set (`fr…` gives French);
 - on macOS and Windows, launched from the Finder or the Start menu, the system's language.
 
-To force a language from a terminal:
+A language chosen in the settings wins over the system's.
 
-```bash
-LANG=en_US.UTF-8 debarras
-LANG=fr_FR.UTF-8 debarras
-```
+The demo's folder names (`projects` or `projets`) are made when it opens: they change at the next launch.
 
 ## The settings file
 
-Débarras writes one small text file, `settings`, only when you change the theme:
+Débarras writes one small text file, `settings`, when you change a setting or open a folder:
 
 | System | Folder |
 |---|---|
@@ -36,6 +35,14 @@ It holds one line per setting:
 
 ```
 theme=Nord
+language=fr
+last=/home/you/projects
 ```
+
+| Key | Value |
+|---|---|
+| `theme` | the name of a theme, as the settings show it; absent: like the system |
+| `language` | `en` or `fr`; absent: the system's |
+| `last` | the folder opened last, or `demo`; opened again at launch |
 
 An unknown line is ignored, and a missing or empty file means the defaults. Deleting the folder resets Débarras.

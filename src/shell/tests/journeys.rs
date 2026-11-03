@@ -51,10 +51,19 @@ fn the_demo_opens_folders_ticks_and_goes_back(cx: &mut TestAppContext) {
     cx.run_until_parked();
     assert!(shell.read_with(cx, |s, _| s.shown.is_empty()));
 
-    // The button deletes nothing and says so.
+    // Freeing sums up first; in the demo, what is ticked leaves the plan and nothing else happens.
+    let (total, picked, items) = shell.read_with(cx, |s, _| (s.disk.as_ref().unwrap().root.size, s.ticked_total(), s.to_free().len()));
     click_on(cx, "free");
-    let status = shell.read_with(cx, |s, _| s.status.clone()).unwrap();
-    assert!(status.contains("ne supprime encore rien"), "{status}");
+    assert!(cx.debug_bounds("confirm").is_some());
+    click_on(cx, "confirm-trash");
+    assert_eq!(overlay(&shell, cx), None);
+    let (after, ticked, status) = shell.read_with(cx, |s, _| (s.disk.as_ref().unwrap().root.size, s.ticked.len(), s.status.clone().unwrap()));
+    assert_eq!((after, ticked), (total - picked, 0));
+    assert!(status.contains(&format!("{items} éléments")), "{status}");
+    // Nothing ticked any more: the button says what to do.
+    click_on(cx, "free");
+    assert_eq!(overlay(&shell, cx), None);
+    assert!(shell.read_with(cx, |s, _| s.status.clone().unwrap()).contains("Rien n'est coché"));
 }
 
 #[gpui::test]
@@ -143,13 +152,13 @@ fn a_scan_can_be_stopped(cx: &mut TestAppContext) {
 
 #[gpui::test]
 fn the_theme_key_goes_round_and_is_kept(cx: &mut TestAppContext) {
-    let (root, shell, cx, _config) = open(cx, "theme", Start::Demo);
+    let (_root, shell, cx, _config) = open(cx, "theme", Start::Demo);
     let first = shell.read_with(cx, |s, _| s.theme.name);
     cx.simulate_keystrokes("t");
     let second = shell.read_with(cx, |s, _| s.theme.name);
     assert_ne!(first, second);
-    let saved = fs::read_to_string(root.join(".config/debarras/settings")).unwrap();
-    assert_eq!(saved, format!("theme={second}\n"));
+    let saved = fs::read_to_string(platform::config_dir().join("settings")).unwrap();
+    assert_eq!(Prefs::parse(&saved).theme, second);
     for _ in 1..crate::ui::theme::THEMES.len() {
         cx.simulate_keystrokes("t");
     }
@@ -165,11 +174,11 @@ fn the_help_opens_and_closes(cx: &mut TestAppContext) {
     assert!(cx.debug_bounds("help").is_some());
     // Escape closes the help first, and leaves the folder shown.
     cx.simulate_keystrokes("escape");
-    assert!(cx.debug_bounds("help").is_none());
+    assert_eq!(overlay(&shell, cx), None);
     assert_eq!(shell.read_with(cx, |s, _| s.shown.len()), 1);
     cx.simulate_keystrokes("f1");
     click_on(cx, "help");
-    assert!(cx.debug_bounds("help").is_some(), "a click inside the help keeps it");
+    assert_eq!(overlay(&shell, cx), Some(Overlay::Help), "a click inside the help keeps it");
 }
 
 #[gpui::test]

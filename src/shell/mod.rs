@@ -1,12 +1,15 @@
 //! The window: what is shown (start screen, scan in progress, the plan), the gestures, and the
 //! scan run in the background. One `impl Shell` per subject: `plan.rs`, `panel.rs`, `start.rs`,
-//! `help.rs`, `render.rs`; the shortcuts are in `keymap.rs`.
+//! `help.rs`, `settings.rs`, `free.rs` (deleting what is ticked), `render.rs`; the shortcuts are in
+//! `keymap.rs`.
 
+mod free;
 mod help;
 mod keymap;
 mod panel;
 mod plan;
 mod render;
+mod settings;
 mod start;
 #[cfg(test)]
 mod tests;
@@ -29,9 +32,9 @@ use crate::{
     lang::{self, tr},
     logic::{
         layout::Tile,
-        prefs::Prefs,
+        prefs::{Last, Prefs},
         sample,
-        tree::{Node, Reclaim},
+        tree::{Node, Reclaim, outermost},
     },
     platform::{self, scan},
     ui::{assets::init_fonts, theme::Theme},
@@ -90,6 +93,22 @@ struct PlanKey {
     ticks: u64,
 }
 
+/// What is drawn over the window.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Overlay {
+    Help,
+    Settings,
+    /// The summary of what is ticked, before it is freed.
+    Confirm,
+}
+
+/// The list of the panel.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum List {
+    Suggestions,
+    Ticked,
+}
+
 /// What the window shows besides the plan.
 pub enum Stage {
     /// Nothing read yet: choose a folder.
@@ -113,7 +132,11 @@ pub struct Shell {
     /// The plots of the last frame, in window coordinates (hover and click).
     tiles: Vec<Tile>,
     hovered: Option<Tile>,
-    help: bool,
+    overlay: Option<Overlay>,
+    list: List,
+    /// Ticked items are being deleted, in the background: the ticks stay as they are meanwhile.
+    freeing: bool,
+    lines_scroll: gpui::UniformListScrollHandle,
     /// A message under the suggestions (what a button did, what failed).
     status: Option<SharedString>,
     /// The window edge under the pointer, where the app draws its frame (Linux).
@@ -131,6 +154,7 @@ impl Shell {
         let focus = cx.focus_handle();
         focus.focus(window);
         let prefs = Prefs::parse(&platform::load_file("settings"));
+        lang::set_language(prefs.language);
         let theme = Theme::of(&prefs, window.appearance());
         // The house themes follow the system's appearance while the user has chosen none.
         cx.observe_window_appearance(window, |this: &mut Self, window, cx| {
@@ -148,13 +172,22 @@ impl Shell {
             ticked: HashSet::new(),
             tiles: Vec::new(),
             hovered: None,
-            help: false,
+            overlay: None,
+            list: List::Suggestions,
+            freeing: false,
+            lines_scroll: gpui::UniformListScrollHandle::new(),
             status: None,
             edge: None,
             plot: cx.new(|_| Plot::new()),
             plot_key: None,
             disk_count: 0,
             tick_count: 0,
+        };
+        // Without arguments, what was shown last opens again; a folder gone since then does not.
+        let start = match (start, shell.prefs.last.clone()) {
+            (Start::Choose, Some(Last::Demo)) => Start::Demo,
+            (Start::Choose, Some(Last::Folder(path))) if path.is_dir() => Start::Folder(path),
+            (start, _) => start,
         };
         match start {
             Start::Choose => {}
@@ -168,16 +201,32 @@ impl Shell {
         self.set_disk(Disk::new(sample::home(), Source::Demo, 0, 0, Duration::ZERO), cx);
     }
 
-    /// Shows a disk: at its root, with what can go without loss ticked.
+    /// Shows a disk: at its root, with what can go without loss ticked. It opens again at the next launch.
     fn set_disk(&mut self, disk: Disk, cx: &mut Context<Self>) {
+        let last = match &disk.source {
+            Source::Demo => Last::Demo,
+            Source::Folder(path) => Last::Folder(path.clone()),
+        };
+        if self.prefs.last.as_ref() != Some(&last) {
+            self.prefs.last = Some(last);
+            self.save_prefs();
+        }
         self.ticked = disk.suggestions.iter().filter(|s| s.reclaim == Reclaim::Safe).map(|s| s.path.clone()).collect();
         self.disk_count += 1;
         self.disk = Some(disk);
         self.shown.clear();
         self.hovered = None;
         self.status = None;
+        self.list = List::Suggestions;
         self.stage = Stage::Plan;
         cx.notify();
+    }
+
+    /// Writes the settings; a failure is told in the panel.
+    fn save_prefs(&mut self) {
+        if let Err(e) = platform::save_file("settings", &self.prefs.to_text()) {
+            self.status = Some(format!("{} {}", tr("Settings not saved:", "Réglages non enregistrés :"), lang::io_reason(&e)).into());
+        }
     }
 
     /// Reads `path` in the background; the window shows the count growing until it is done.
@@ -287,12 +336,22 @@ impl Shell {
         self.shown.iter().chain(rel).copied().collect()
     }
 
+    /// What freeing would delete: the ticked items not inside another ticked one, largest first.
+    fn to_free(&self) -> Vec<(Vec<usize>, &Node)> {
+        let Some(disk) = &self.disk else { return Vec::new() };
+        let mut items: Vec<_> = outermost(&self.ticked).into_iter().filter_map(|p| disk.root.at(&p).map(|n| (p, n))).collect();
+        items.sort_by(|a, b| b.1.size.cmp(&a.1.size).then_with(|| a.0.cmp(&b.0)));
+        items
+    }
+
     fn ticked_total(&self) -> u64 {
-        let Some(disk) = &self.disk else { return 0 };
-        self.ticked.iter().filter_map(|p| disk.root.at(p)).map(|n| n.size).sum()
+        self.to_free().iter().map(|(_, n)| n.size).sum()
     }
 
     fn toggle(&mut self, path: Vec<usize>, cx: &mut Context<Self>) {
+        if self.freeing {
+            return;
+        }
         if !self.ticked.remove(&path) {
             self.ticked.insert(path);
         }
@@ -308,10 +367,10 @@ impl Shell {
         cx.notify();
     }
 
-    /// Back to the parent folder; the help closes first.
+    /// Back to the parent folder; what is drawn over the window closes first.
     fn up(&mut self, cx: &mut Context<Self>) {
-        if self.help {
-            self.help = false;
+        if self.overlay.is_some() {
+            self.overlay = None;
         } else if matches!(self.stage, Stage::Scanning { .. }) {
             self.stop_scan();
         } else if self.shown.pop().is_none() {
@@ -335,9 +394,13 @@ impl Shell {
     fn next_theme(&mut self, window: &Window, cx: &mut Context<Self>) {
         self.prefs.theme = self.theme.next_name().to_string();
         self.theme = Theme::of(&self.prefs, window.appearance());
-        if let Err(e) = platform::save_file("settings", &self.prefs.to_text()) {
-            self.status = Some(format!("{} {}", tr("Theme not saved:", "Thème non enregistré :"), lang::io_reason(&e)).into());
-        }
+        self.save_prefs();
+        cx.notify();
+    }
+
+    /// Opens what is drawn over the window, or closes it when it is the one shown.
+    fn toggle_overlay(&mut self, overlay: Overlay, cx: &mut Context<Self>) {
+        self.overlay = if self.overlay == Some(overlay) { None } else { Some(overlay) };
         cx.notify();
     }
 
@@ -350,22 +413,6 @@ impl Shell {
         } else if let Some(path) = disk.root.disk_path(&self.rooted(&rel)) {
             cx.reveal_path(&path);
         }
-        cx.notify();
-    }
-
-    // ponytail: nothing is deleted yet; moving to the system's trash (freedesktop spec, Finder,
-    // recycle bin) comes with a summary to confirm before anything leaves the disk.
-    fn free_ticked(&mut self, cx: &mut Context<Self>) {
-        let n = self.ticked.len() as u64;
-        self.status = Some(
-            format!(
-                "{} {} · {}",
-                tr("This version deletes nothing yet:", "Cette version ne supprime encore rien :"),
-                lang::count(n, ("item", "items", "élément", "éléments")),
-                lang::size(self.ticked_total())
-            )
-            .into(),
-        );
         cx.notify();
     }
 }

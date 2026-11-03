@@ -32,16 +32,16 @@ impl Pattern {
     }
 }
 
-/// The pattern over a whole plot of `w` × `h` px. `strong`: the item is ticked to be freed.
+/// The pattern over a whole plot of `w` × `h` px, the same ticked or not: the checkbox says that.
 /// Each is a handful of primitives whatever the plot's size: hatching is drawn by the shader, dots are
 /// tiles of one picture, rasterized once. A dot per primitive cost milliseconds a frame.
-pub fn pattern_layer(pattern: Pattern, ink: Hsla, strong: bool, (w, h): (f32, f32)) -> Option<AnyElement> {
+pub fn pattern_layer(pattern: Pattern, ink: Hsla, (w, h): (f32, f32)) -> Option<AnyElement> {
     let layer = || div().absolute().top_0().left_0().size_full().overflow_hidden();
     match pattern {
         Pattern::None => None,
-        Pattern::Hatch => Some(layer().bg(pattern_slash(ink.opacity(if strong { 0.36 } else { 0.14 }), 1., 6.)).into_any_element()),
+        Pattern::Hatch => Some(layer().bg(pattern_slash(ink.opacity(0.18), 1., 6.)).into_any_element()),
         Pattern::Dots => {
-            let dot = ink.opacity(if strong { 0.55 } else { 0.38 });
+            let dot = ink.opacity(0.42);
             let (cols, rows) = ((w / DOTS_SIDE).ceil() as usize, (h / DOTS_SIDE).ceil() as usize);
             let tiles = (0..rows * cols).map(move |i| {
                 let (x, y) = ((i % cols) as f32 * DOTS_SIDE, (i / cols) as f32 * DOTS_SIDE);
@@ -60,6 +60,43 @@ pub fn swatch(pattern: Pattern, t: &Theme) -> AnyElement {
         Pattern::Dots => d.flex().items_center().justify_center().child(div().size(px(2.)).bg(t.ink.opacity(0.7))).into_any_element(),
         Pattern::None => d.into_any_element(),
     }
+}
+
+/// Text kept on one line, cut with an ellipsis. Not `truncate()`: gpui 0.2.2 keeps the layout of a
+/// text that does not wrap from its first measure, at its natural width, and never cuts it; one
+/// wrapped line is measured again when its width is known.
+pub fn one_line<E: Styled>(element: E) -> E {
+    element.overflow_hidden().line_clamp(1).text_ellipsis()
+}
+
+/// Two strokes from corner to corner of a `side` px square, each a thin parallelogram.
+fn cross(side: f32, stroke: f32, ink: Hsla) -> impl IntoElement {
+    canvas(|_, _, _| {}, move |b: Bounds<Pixels>, _, window: &mut Window, _| {
+        let (x, y, s, w) = (b.origin.x, b.origin.y, b.size.width, px(stroke));
+        for (from, to) in [((x, y), (x + s, y + s)), ((x + s, y), (x, y + s))] {
+            let mut path = gpui::Path::new(point(from.0 - w / 2., from.1));
+            path.line_to(point(from.0 + w / 2., from.1));
+            path.line_to(point(to.0 + w / 2., to.1));
+            path.line_to(point(to.0 - w / 2., to.1));
+            window.paint_path(path, ink);
+        }
+    })
+    .size(px(side))
+}
+
+/// What is ticked to be freed: an empty box, or a box with a cross. Drawn on the panel's colour,
+/// so that it reads the same over every plot.
+pub fn checkbox(on: bool, t: &Theme) -> Div {
+    div()
+        .size(px(13.))
+        .flex_none()
+        .flex()
+        .items_center()
+        .justify_center()
+        .bg(t.panel)
+        .border_1()
+        .border_color(t.ink)
+        .when(on, |d| d.child(cross(7., 1.6, t.ink)))
 }
 
 /// A small label in capitals, in the secondary colour.
@@ -125,22 +162,10 @@ pub fn window_buttons(window: &Window, t: &Theme) -> Div {
             .debug_selector(move || id.into())
     };
     let line = |w: f32, h: f32| div().w(px(w)).h(px(h)).bg(ink);
-    // Two strokes from corner to corner, each a thin parallelogram.
-    let cross = canvas(|_, _, _| {}, move |b: Bounds<Pixels>, _, window: &mut Window, _| {
-        let (x, y, s, w) = (b.origin.x, b.origin.y, b.size.width, px(1.5));
-        for (from, to) in [((x, y), (x + s, y + s)), ((x + s, y), (x, y + s))] {
-            let mut path = gpui::Path::new(point(from.0 - w / 2., from.1));
-            path.line_to(point(from.0 + w / 2., from.1));
-            path.line_to(point(to.0 + w / 2., to.1));
-            path.line_to(point(to.0 - w / 2., to.1));
-            window.paint_path(path, ink);
-        }
-    })
-    .size(px(10.));
     div()
         .flex()
         .gap(px(4.))
         .when(controls.minimize, |d| d.child(slot("minimize").child(line(11., 1.5)).on_click(|_, window, _| window.minimize_window())))
         .when(controls.maximize, |d| d.child(slot("maximize").child(div().size(px(10.)).border_1().border_color(ink)).on_click(|_, window, _| window.zoom_window())))
-        .child(slot("close").child(cross).on_click(|_, window, _| window.remove_window()))
+        .child(slot("close").child(cross(10., 1.5, ink)).on_click(|_, window, _| window.remove_window()))
 }

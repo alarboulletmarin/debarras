@@ -2,4 +2,4 @@
 
 use gpui::actions;
 
-actions!(app, [Up, NextTheme, ToggleHelp, OpenFolder, Rescan, Reveal, Quit]);
+actions!(app, [Up, NextTheme, ToggleHelp, OpenSettings, OpenFolder, Rescan, Reveal, Quit]);

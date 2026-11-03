@@ -1,5 +1,6 @@
 //! The outside world: the configuration folder and the disk itself. No gpui.
 
+pub mod remove;
 pub mod scan;
 
 use std::{

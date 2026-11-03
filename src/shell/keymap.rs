@@ -17,6 +17,7 @@ pub fn defaults() -> Vec<(String, Box<dyn Action>)> {
         b("backspace", Box::new(Up)),
         b("t", Box::new(NextTheme)),
         b("f1", Box::new(ToggleHelp)),
+        b(&format!("{MOD}-,"), Box::new(OpenSettings)),
         b(&format!("{MOD}-o"), Box::new(OpenFolder)),
         b("f5", Box::new(Rescan)),
         b(&format!("{MOD}-r"), Box::new(Rescan)),
@@ -71,6 +72,7 @@ pub fn help_sections() -> Vec<(&'static str, Vec<Row>)> {
                 k(&Reveal, tr("Show the hovered item in the file manager", "Montrer l'élément survolé dans le gestionnaire de fichiers")),
                 g(tr("Hatching", "Hachures"), tr("Can go without loss: rebuilt or downloaded again when needed", "Libérable sans perte : reconstruit ou retéléchargé au besoin")),
                 g(tr("Dots", "Pointillés"), tr("Large, to review: you judge", "Volumineux, à examiner : à vous de juger")),
+                g(tr("Free", "Libérer"), tr("Sums up what is ticked, then moves it to the trash or deletes it for good", "Récapitule ce qui est coché, puis le met à la corbeille ou le supprime définitivement")),
             ],
         ),
         (
@@ -82,7 +84,12 @@ pub fn help_sections() -> Vec<(&'static str, Vec<Row>)> {
         ),
         (
             tr("The app", "L'application"),
-            vec![k(&NextTheme, tr("Next theme (kept for the next launch)", "Thème suivant (gardé au prochain lancement)")), k(&ToggleHelp, tr("This help", "Cette aide")), k(&Quit, tr("Quit", "Quitter"))],
+            vec![
+                k(&OpenSettings, tr("Settings: theme and language (also the button at the bottom of the panel)", "Réglages : thème et langue (aussi le bouton en bas du panneau)")),
+                k(&NextTheme, tr("Next theme (kept for the next launch)", "Thème suivant (gardé au prochain lancement)")),
+                k(&ToggleHelp, tr("This help", "Cette aide")),
+                k(&Quit, tr("Quit", "Quitter")),
+            ],
         ),
     ]
 }

@@ -12,7 +12,7 @@ use crate::{
     ui::{
         assets::{DISPLAY, MONO},
         theme::Theme,
-        widgets::{Pattern, pattern_layer},
+        widgets::{Pattern, checkbox, pattern_layer},
     },
 };
 
@@ -52,7 +52,7 @@ pub fn tile(t: &Tile, map: Rect, theme: &Theme, ticked: bool, opts: &Opts) -> An
         .border_color(theme.ink.opacity(if t.depth == 1 { 0.85 } else { 0.45 }))
         .when(summed, |d| d.border_dashed())
         .overflow_hidden()
-        .children(pattern_layer(pattern, theme.ink, ticked, (r.w, r.h)));
+        .children(pattern_layer(pattern, theme.ink, (r.w, r.h)));
 
     if t.open {
         // An open folder: its name and size in a band at the top, its children below.
@@ -69,7 +69,15 @@ pub fn tile(t: &Tile, map: Rect, theme: &Theme, ticked: bool, opts: &Opts) -> An
                 .items_center()
                 .justify_between()
                 .gap(px(8.))
-                .child(div().min_w_0().text_size(px(12.)).font_weight(FontWeight::SEMIBOLD).truncate().child(name))
+                .child(
+                    div()
+                        .min_w_0()
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .when(pattern != Pattern::None, |d| d.child(checkbox(ticked, theme)))
+                        .child(div().min_w_0().text_size(px(12.)).font_weight(FontWeight::SEMIBOLD).truncate().child(name)),
+                )
                 .child(div().font_family(MONO).text_size(px(11.)).text_color(theme.soft).flex_none().child(size)),
         );
     } else if r.w > 56. && r.h > 36. {
@@ -85,7 +93,14 @@ pub fn tile(t: &Tile, map: Rect, theme: &Theme, ticked: bool, opts: &Opts) -> An
                 .bg(label_bg)
                 .flex()
                 .flex_col()
-                .child(div().text_size(px(if t.depth == 1 { 12.5 } else { 11.5 })).font_weight(FontWeight::MEDIUM).truncate().child(name))
+                .child(
+                    div()
+                        .flex()
+                        .items_center()
+                        .gap(px(6.))
+                        .when(pattern != Pattern::None, |d| d.child(checkbox(ticked, theme)))
+                        .child(div().min_w_0().text_size(px(if t.depth == 1 { 12.5 } else { 11.5 })).font_weight(FontWeight::MEDIUM).truncate().child(name)),
+                )
                 .when(!big && r.h > 44., |d| d.child(div().font_family(MONO).text_size(px(10.5)).text_color(theme.soft).child(size.clone()))),
         );
         if big {

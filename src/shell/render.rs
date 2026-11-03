@@ -1,5 +1,5 @@
 //! Drawing the window: its frame where the app draws it (Linux), the shortcuts, then the screen
-//! of the current stage and the help over it.
+//! of the current stage, and what is drawn over it (help, settings, the summary before freeing).
 
 use gpui::{CursorStyle, Decorations, MouseButton, MouseMoveEvent, Pixels, Point, Size, div, prelude::*, px};
 
@@ -45,10 +45,8 @@ impl Render for Shell {
             .key_context("Debarras")
             .on_action(cx.listener(|this, _: &Up, _, cx| this.up(cx)))
             .on_action(cx.listener(|this, _: &NextTheme, window, cx| this.next_theme(window, cx)))
-            .on_action(cx.listener(|this, _: &ToggleHelp, _, cx| {
-                this.help = !this.help;
-                cx.notify();
-            }))
+            .on_action(cx.listener(|this, _: &ToggleHelp, _, cx| this.toggle_overlay(Overlay::Help, cx)))
+            .on_action(cx.listener(|this, _: &OpenSettings, _, cx| this.toggle_overlay(Overlay::Settings, cx)))
             .on_action(cx.listener(|this, _: &OpenFolder, window, cx| this.choose_folder(window, cx)))
             .on_action(cx.listener(|this, _: &Rescan, _, cx| this.rescan(cx)))
             .on_action(cx.listener(|this, _: &Reveal, _, cx| this.reveal(cx)))
@@ -62,7 +60,13 @@ impl Render for Shell {
             .when(client, |d| d.child(drag_window(div().id("title-strip").absolute().top_0().left_0().w_full().h(px(28.)))))
             .child(screen)
             .when(client, |d| d.child(div().absolute().top(px(6.)).right(px(8.)).child(window_buttons(window, &t))))
-            .when(self.help, |d| d.child(self.render_help(room, cx)));
+            .when_some(self.overlay, |d, overlay| {
+                d.child(match overlay {
+                    Overlay::Help => self.render_help(room, cx).into_any_element(),
+                    Overlay::Settings => self.render_settings(room, cx).into_any_element(),
+                    Overlay::Confirm => self.render_confirm(room, cx).into_any_element(),
+                })
+            });
 
         div()
             .size_full()

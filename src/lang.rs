@@ -1,18 +1,81 @@
 //! Language: interface text in English or French (`tr`), how the system's language is detected,
 //! and how sizes, counts and shares are written. Used by every layer.
 
-use std::sync::OnceLock;
+use std::sync::{
+    OnceLock,
+    atomic::{AtomicU8, Ordering::Relaxed},
+};
 
-static FRENCH: OnceLock<bool> = OnceLock::new();
+static SYSTEM_FRENCH: OnceLock<bool> = OnceLock::new();
+/// The user's choice: `AUTO` follows the system.
+static CHOICE: AtomicU8 = AtomicU8::new(AUTO);
+const AUTO: u8 = 0;
+const ENGLISH_CHOSEN: u8 = 1;
+const FRENCH_CHOSEN: u8 = 2;
 
-/// Interface text: French if the system's language is, English otherwise.
+/// The interface's language, as the settings name it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Language {
+    System,
+    English,
+    French,
+}
+
+impl Language {
+    pub const ALL: [Language; 3] = [Language::System, Language::English, Language::French];
+
+    /// How the settings file writes it; empty for the system's.
+    pub fn code(self) -> &'static str {
+        match self {
+            Language::System => "",
+            Language::English => "en",
+            Language::French => "fr",
+        }
+    }
+
+    pub fn from_code(code: &str) -> Self {
+        Language::ALL.into_iter().find(|l| l.code() == code).unwrap_or(Language::System)
+    }
+
+    /// Its name, in itself: someone who cannot read the current language still finds theirs.
+    pub fn label(self) -> &'static str {
+        match self {
+            Language::System => tr("System", "Système"),
+            Language::English => "English",
+            Language::French => "Français",
+        }
+    }
+}
+
+/// Speaks `language` from now on. In tests, on this thread only, so that tests running together
+/// do not change each other's text.
+pub fn set_language(language: Language) {
+    #[cfg(test)]
+    ENGLISH.set(language == Language::English);
+    #[cfg(not(test))]
+    CHOICE.store(
+        match language {
+            Language::System => AUTO,
+            Language::English => ENGLISH_CHOSEN,
+            Language::French => FRENCH_CHOSEN,
+        },
+        Relaxed,
+    );
+}
+
+/// Interface text: in the language chosen, else French if the system's language is, else English.
 pub fn tr(en: &'static str, fr: &'static str) -> &'static str {
     #[cfg(test)]
     if ENGLISH.get() {
         return en;
     }
-    // Tests run in French to stay deterministic.
-    if *FRENCH.get_or_init(|| cfg!(test) || system_is_french()) { fr } else { en }
+    let french = match CHOICE.load(Relaxed) {
+        ENGLISH_CHOSEN => false,
+        FRENCH_CHOSEN => true,
+        // Tests run in French to stay deterministic.
+        _ => *SYSTEM_FRENCH.get_or_init(|| cfg!(test) || system_is_french()),
+    };
+    if french { fr } else { en }
 }
 
 #[cfg(test)]

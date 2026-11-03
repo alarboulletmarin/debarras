@@ -20,6 +20,8 @@ impl Shell {
         // A veil over the window; a click on it closes the help.
         div()
             .id("help-veil")
+            // Nothing under the veil hears the pointer: a click here never reaches the plan.
+            .occlude()
             .absolute()
             .size_full()
             .bg(t.paper.opacity(0.85))
@@ -27,7 +29,7 @@ impl Shell {
             .items_center()
             .justify_center()
             .on_click(cx.listener(|this, _, _, cx| {
-                this.help = false;
+                this.overlay = None;
                 cx.notify();
             }))
             .child(

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Only the latest release receives fixes. Please check that you run it before reporting (`debarras --version`, or the help panel).
+Only the latest release receives fixes. Please check that you run it before reporting (`debarras --version`, or the settings).
 
 ## Reporting a vulnerability
 
