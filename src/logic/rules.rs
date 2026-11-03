@@ -30,22 +30,22 @@ pub enum Why {
 impl Why {
     pub fn text(self) -> &'static str {
         match self {
-            Why::NodeModules => tr("npm dependencies, installed again by npm install.", "Dépendances npm, réinstallées par npm install."),
-            Why::RustTarget => tr("Rust build output, rebuilt by cargo build.", "Compilation Rust, refaite par cargo build."),
-            Why::PythonCache => tr("Python cache, rebuilt on its own.", "Cache Python, reconstruit tout seul."),
-            Why::Gradle => tr("Gradle cache, downloaded again by the next build.", "Cache Gradle, retéléchargé au prochain build."),
-            Why::WebBuild => tr("Web build cache, rebuilt by the next build.", "Cache de build web, refait au prochain build."),
-            Why::CargoRegistry => tr("Downloaded crate sources, fetched again when needed.", "Sources des crates téléchargées, retéléchargées au besoin."),
-            Why::NpmCache => tr("npm download cache, filled again when needed.", "Cache des téléchargements npm, rempli de nouveau au besoin."),
-            Why::XcodeDerived => tr("Xcode build output, rebuilt by the next build.", "Compilation Xcode, refaite au prochain build."),
+            Why::NodeModules => tr("npm dependencies: npm install puts them back.", "Dépendances npm : se réinstallent avec npm install."),
+            Why::RustTarget => tr("Rust build output: cargo build makes it again.", "Compilation Rust : cargo build la refait."),
+            Why::PythonCache => tr("Python cache: Python rebuilds it on its own.", "Cache Python : Python le reconstruit tout seul."),
+            Why::Gradle => tr("Gradle cache: the next build downloads it again.", "Cache Gradle : le prochain build le retélécharge."),
+            Why::WebBuild => tr("Web build cache: the next build makes it again.", "Cache de build web : le prochain build le refait."),
+            Why::CargoRegistry => tr("Downloaded crate sources: cargo fetches them again when needed.", "Sources des crates : cargo les retélécharge au besoin."),
+            Why::NpmCache => tr("npm download cache: npm fills it again when needed.", "Cache des téléchargements npm : npm le remplit de nouveau au besoin."),
+            Why::XcodeDerived => tr("Xcode build output: the next build makes it again.", "Compilation Xcode : le prochain build la refait."),
             Why::UserCache => tr("User cache: applications rebuild it.", "Cache utilisateur : les applications le reconstruisent."),
             Why::MacCaches => tr("macOS caches: applications rebuild them.", "Caches de macOS : les applications les reconstruisent."),
-            Why::WindowsTemp => tr("Windows temporary files.", "Fichiers temporaires de Windows."),
-            Why::Trash => tr("Trash: already deleted, not yet emptied.", "Corbeille : déjà supprimé, pas encore vidé."),
-            Why::Models => tr("Local AI models: large and downloadable again, but slow to get back.", "Modèles d'IA locaux : volumineux et retéléchargeables, mais longs à récupérer."),
+            Why::WindowsTemp => tr("Windows temporary files: nothing needs them once closed.", "Fichiers temporaires de Windows : plus rien ne s'en sert une fois fermés."),
+            Why::Trash => tr("Trash: already deleted, it only waits to be emptied.", "Corbeille : déjà supprimé, n'attend plus que d'être vidé."),
+            Why::Models => tr("Local AI models: downloadable again, but slow to get back.", "Modèles d'IA locaux : retéléchargeables, mais longs à récupérer."),
             Why::Games => tr("Installed games: remove those you no longer play.", "Jeux installés : désinstallez ceux auxquels vous ne jouez plus."),
             Why::Containers => tr("Container images and volumes: their prune command frees the unused ones.", "Images et volumes de conteneurs : leur commande prune libère ceux qui ne servent plus."),
-            Why::DiskImage => tr("Disk image over 500 MB: often kept after an install.", "Image disque de plus de 500 Mo : souvent gardée après une installation."),
+            Why::DiskImage => tr("Disk image over 500 MB: often useless once installed.", "Image disque de plus de 500 Mo : souvent inutile une fois installée."),
         }
     }
 }

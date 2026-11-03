@@ -12,7 +12,7 @@ use crate::{
     ui::{
         assets::{DISPLAY, MONO},
         theme::Theme,
-        widgets::{Pattern, checkbox, pattern_layer},
+        widgets::{Pattern, checkbox, pattern_layer, verdict_tag},
     },
 };
 
@@ -101,7 +101,9 @@ pub fn tile(t: &Tile, map: Rect, theme: &Theme, ticked: bool, opts: &Opts) -> An
                         .when(pattern != Pattern::None, |d| d.child(checkbox(ticked, theme)))
                         .child(div().min_w_0().text_size(px(if t.depth == 1 { 12.5 } else { 11.5 })).font_weight(FontWeight::MEDIUM).truncate().child(name)),
                 )
-                .when(!big && r.h > 44., |d| d.child(div().font_family(MONO).text_size(px(10.5)).text_color(theme.soft).child(size.clone()))),
+                .when(!big && r.h > 44., |d| d.child(div().font_family(MONO).text_size(px(10.5)).text_color(theme.soft).child(size.clone())))
+                // The pattern's word, where there is room: the plan reads without its legend.
+                .when(pattern != Pattern::None && r.w >= 140. && r.h >= 60., |d| d.child(div().mt(px(4.)).mb(px(2.)).flex().child(verdict_tag(t.reclaim, "", theme)))),
         );
         if big {
             let (n, unit) = lang::size_parts(t.size);

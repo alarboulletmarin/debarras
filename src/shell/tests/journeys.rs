@@ -63,7 +63,7 @@ fn the_demo_opens_folders_ticks_and_goes_back(cx: &mut TestAppContext) {
     // Nothing ticked any more: the button says what to do.
     click_on(cx, "free");
     assert_eq!(overlay(&shell, cx), None);
-    assert!(shell.read_with(cx, |s, _| s.status.clone().unwrap()).contains("Rien n'est coché"));
+    assert!(shell.read_with(cx, |s, _| s.status.clone().unwrap()).contains("Rien n'est sélectionné"));
 }
 
 #[gpui::test]
@@ -211,4 +211,45 @@ fn the_pointer_never_draws_the_plots_again(cx: &mut TestAppContext) {
     // A tick does draw them again: the hatching gets darker.
     click_on(cx, "suggestion-0-box");
     assert!(plot.read_with(cx, |p, _| p.renders) > before);
+}
+
+#[gpui::test]
+fn the_steps_the_answer_and_the_summary_say_what_happens(cx: &mut TestAppContext) {
+    let (_root, shell, cx, _config) = open(cx, "parcours", Start::Demo);
+    // Choosing: what was selected for the user is said, until a tick changes.
+    let (step, auto, safe) = shell.read_with(cx, |s, _| (s.step(), s.auto_ticked, s.disk.as_ref().unwrap().suggestions.iter().filter(|x| x.reclaim == Reclaim::Safe).count()));
+    assert_eq!((step, auto), (1, Some(safe)));
+    assert!(cx.debug_bounds("gain").is_some() && cx.debug_bounds("legend").is_some());
+    assert!(cx.debug_bounds("up-button").is_none(), "nothing to go up to at the root");
+
+    // The third step opens the summary, grouped: safe ones, and the one to check first once selected.
+    let iso = shell.read_with(cx, |s, _| s.disk.as_ref().unwrap().suggestions.iter().position(|x| x.reclaim == Reclaim::Review)).expect("the demo has something to check");
+    let path = shell.read_with(cx, |s, _| s.disk.as_ref().unwrap().suggestions[iso].path.clone());
+    shell.update(cx, |s, cx| s.toggle(path, cx));
+    assert_eq!(shell.read_with(cx, |s, _| s.auto_ticked), None, "a tick changed: no longer said to be done for the user");
+    click_on(cx, "step-2");
+    assert_eq!((overlay(&shell, cx), shell.read_with(cx, |s, _| s.step())), (Some(Overlay::Confirm), 2));
+    let (safe_group, review_group) = (cx.debug_bounds("confirm-group-2").unwrap(), cx.debug_bounds("confirm-group-1").unwrap());
+    assert!(safe_group.top() < review_group.top(), "safe first");
+    let (a, b) = shell.read_with(cx, |s, _| s.ticked_by_verdict());
+    assert_eq!(a + b, shell.read_with(cx, |s, _| s.ticked_total()));
+    assert!(a > 0 && b > 0);
+    cx.simulate_keystrokes("escape");
+    assert_eq!((overlay(&shell, cx), shell.read_with(cx, |s, _| s.step())), (None, 1));
+
+    // Up goes back one level, as Escape does.
+    let projects = tile_named(&shell, cx, "projets");
+    click(cx, point(px(projects.rect.x + 4.), px(projects.rect.y + 4.)));
+    assert_eq!(shell.read_with(cx, |s, _| s.shown.len()), 1);
+    click_on(cx, "up-button");
+    assert!(shell.read_with(cx, |s, _| s.shown.is_empty()));
+
+    // Nothing selected: the third step does not open an empty summary, it says why.
+    shell.update(cx, |s, cx| {
+        s.ticked.clear();
+        cx.notify();
+    });
+    click_on(cx, "step-2");
+    assert_eq!(overlay(&shell, cx), None);
+    assert!(shell.read_with(cx, |s, _| s.status.clone().unwrap()).contains("Rien n'est sélectionné"));
 }

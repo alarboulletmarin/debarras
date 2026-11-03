@@ -8,7 +8,7 @@ use crate::{
     logic::rules::LISTED,
     ui::{
         assets::MONO,
-        widgets::{Pattern, caps, swatch},
+        widgets::{caps, verdict_tag},
     },
 };
 
@@ -36,7 +36,7 @@ impl Shell {
                 .flex()
                 .flex_col()
                 .gap(px(6.))
-                .child(div().mb(px(2.)).flex().items_center().gap(px(8.)).child(swatch(Pattern::of(reclaim), &t)).child(caps(title, &t)))
+                .child(div().mb(px(2.)).flex().items_center().gap(px(8.)).child(verdict_tag(reclaim, "", &t)).child(caps(title, &t)))
                 .child(div().mb(px(4.)).child(text(says)))
                 .children(LISTED.iter().filter(|r| r.0 == reclaim).map(|&(_, names, why)| {
                     div()
@@ -53,8 +53,8 @@ impl Shell {
                 "Débarras ne marque un dossier ou un fichier que lorsque son nom dit, sans doute possible, ce qu'il est : il ne lit jamais le contenu des fichiers et ne devine rien d'après une date. Chaque suggestion est l'élément marqué le plus haut : un cache dans un cache ne compte qu'une fois. Tout le reste est laissé uni, et rien ne quitte le disque avant votre confirmation, dans le récapitulatif qu'ouvre Libérer.",
             ))
             .into_any_element(),
-            section(Reclaim::Safe, tr("Hatched: without loss", "Hachures : sans perte"), tr("Rebuilt or downloaded again on its own. Ticked from the start.", "Se reconstruit ou se retélécharge tout seul. Coché dès l'analyse.")),
-            section(Reclaim::Review, tr("Dotted: to review", "Pointillés : à examiner"), tr("Can go, but it is yours to decide: never ticked for you.", "Peut partir, mais c'est à vous de décider : jamais coché d'office.")),
+            section(Reclaim::Safe, tr("Hatched: safe to remove", "Hachures : sans risque"), tr("Rebuilt or downloaded again on its own. Selected from the start.", "Se reconstruit ou se retélécharge tout seul. Coché d'office dès l'analyse.")),
+            section(Reclaim::Review, tr("Dotted: check first", "Pointillés : à vérifier"), tr("Can go, but it is yours to decide: never selected for you.", "Peut partir, mais c'est à vous de décider : jamais coché d'office.")),
         ];
         self.sheet("rules", tr("How the suggestions are chosen", "Comment les suggestions sont choisies"), String::new(), body, room, cx)
     }

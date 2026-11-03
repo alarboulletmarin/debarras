@@ -67,6 +67,7 @@ pub struct Disk {
 pub struct Suggestion {
     pub path: Vec<usize>,
     pub reclaim: Reclaim,
+    pub size: u64,
 }
 
 impl Disk {
@@ -74,7 +75,7 @@ impl Disk {
         let suggestions = root
             .suggestions()
             .into_iter()
-            .map(|(path, n)| Suggestion { reclaim: n.reclaim, path })
+            .map(|(path, n)| Suggestion { reclaim: n.reclaim, size: n.size, path })
             .collect();
         Disk { root, source, files, errors, took, suggestions }
     }
@@ -128,6 +129,8 @@ pub struct Shell {
     shown: Vec<usize>,
     /// Items ticked to be freed, by their path from the root.
     ticked: HashSet<Vec<usize>>,
+    /// How many items were ticked for the user when the disk was shown, until a tick changes: the panel says so.
+    auto_ticked: Option<usize>,
     /// The plots of the last frame, in window coordinates (hover and click).
     tiles: Vec<Tile>,
     hovered: Option<Tile>,
@@ -171,6 +174,7 @@ impl Shell {
             disk: None,
             shown: Vec::new(),
             ticked: HashSet::new(),
+            auto_ticked: None,
             tiles: Vec::new(),
             hovered: None,
             overlay: None,
@@ -214,6 +218,7 @@ impl Shell {
             self.save_prefs();
         }
         self.ticked = disk.suggestions.iter().filter(|s| s.reclaim == Reclaim::Safe).map(|s| s.path.clone()).collect();
+        self.auto_ticked = Some(self.ticked.len()).filter(|n| *n > 0);
         self.disk_count += 1;
         self.disk = Some(disk);
         self.shown.clear();
@@ -351,6 +356,20 @@ impl Shell {
         self.to_free().iter().map(|(_, n)| n.size).sum()
     }
 
+    /// What freeing would delete, summed by verdict: (safe to remove, check first).
+    fn ticked_by_verdict(&self) -> (u64, u64) {
+        self.to_free().iter().fold((0, 0), |(safe, review), (_, n)| if n.reclaim == Reclaim::Review { (safe, review + n.size) } else { (safe + n.size, review) })
+    }
+
+    /// The step of the journey: 0 scan, 1 choose, 2 free.
+    fn step(&self) -> usize {
+        match (&self.stage, self.overlay) {
+            (Stage::Plan, Some(Overlay::Confirm)) => 2,
+            (Stage::Plan, _) => 1,
+            _ => 0,
+        }
+    }
+
     fn toggle(&mut self, path: Vec<usize>, cx: &mut Context<Self>) {
         if self.freeing {
             return;
@@ -359,6 +378,7 @@ impl Shell {
             self.ticked.insert(path);
         }
         self.tick_count += 1;
+        self.auto_ticked = None;
         self.status = None;
         cx.notify();
     }

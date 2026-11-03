@@ -1,5 +1,5 @@
-//! Small pieces drawn the same way everywhere: the fill of a plot (hatching, dots), the legend's
-//! swatches, the labels in capitals and the large figures.
+//! Small pieces drawn the same way everywhere: the fill of a plot (hatching, dots), the verdict's
+//! tag, the labels in capitals and the large figures.
 
 use gpui::{AnyElement, Bounds, Div, FontWeight, Hsla, MouseButton, Pixels, Stateful, Window, canvas, div, pattern_slash, point, prelude::*, px, svg};
 
@@ -52,21 +52,55 @@ pub fn pattern_layer(pattern: Pattern, ink: Hsla, (w, h): (f32, f32)) -> Option<
     }
 }
 
-/// A small plot of the legend, drawn as the plan draws it: a rectangle, so that it is never read as a
-/// checkbox.
-pub fn swatch(pattern: Pattern, t: &Theme) -> AnyElement {
-    let (w, h) = (22., 13.);
+/// The colour of a verdict's word: blue-green, ochre, or the secondary grey for what stays.
+pub fn verdict_color(reclaim: Reclaim, t: &Theme) -> Hsla {
+    match reclaim {
+        Reclaim::Safe => t.safe,
+        Reclaim::Review => t.review,
+        Reclaim::No => t.soft,
+    }
+}
+
+/// The tag that names a verdict: a small swatch of its pattern and its word, in its colour, outlined.
+/// `extra` follows the word (a count), or is empty.
+pub fn verdict_tag(reclaim: Reclaim, extra: &str, t: &Theme) -> Div {
+    let color = verdict_color(reclaim, t);
+    let word = if extra.is_empty() { reclaim.label().to_uppercase() } else { format!("{} · {extra}", reclaim.label().to_uppercase()) };
+    div()
+        .flex_none()
+        .h(px(20.))
+        .pl(px(4.))
+        .pr(px(6.))
+        .flex()
+        .items_center()
+        .gap(px(6.))
+        .bg(t.panel)
+        .border_1()
+        .border_color(color)
+        .font_family(MONO)
+        .text_size(px(10.5))
+        .text_color(color)
+        .child(small_swatch(Pattern::of(reclaim), color, t))
+        .child(word)
+}
+
+/// A swatch of 14 × 10 px in `color`, its pattern drawn closer so that it reads at that size: in a tag
+/// and before a name of the lists.
+pub fn small_swatch(pattern: Pattern, color: Hsla, t: &Theme) -> Div {
+    let (w, h) = (14., 10.);
     div()
         .relative()
         .w(px(w))
         .h(px(h))
         .flex_none()
-        .bg(t.paper)
+        .bg(t.panel)
         .border_1()
-        .border_color(t.ink.opacity(0.45))
+        .border_color(color)
         .overflow_hidden()
-        .children(pattern_layer(pattern, t.ink, (w, h)))
-        .into_any_element()
+        .children(match pattern {
+            Pattern::Hatch => Some(div().absolute().size_full().bg(pattern_slash(color, 1., 3.)).into_any_element()),
+            pattern => pattern_layer(pattern, color, (w, h)),
+        })
 }
 
 /// Text kept on one line, cut with an ellipsis. Not `truncate()`: gpui 0.2.2 keeps the layout of a
@@ -122,8 +156,8 @@ pub fn figure(bytes: u64, height: f32, t: &Theme) -> Div {
     div()
         .flex()
         .items_baseline()
-        .gap(px(6.))
-        .child(div().font_family(DISPLAY).font_weight(FontWeight::LIGHT).text_size(px(height)).line_height(px(height * 1.05)).child(n))
+        .gap(px(4.))
+        .child(div().font_family(DISPLAY).font_weight(FontWeight::LIGHT).text_size(px(height)).line_height(px(height * 1.04)).child(n))
         .child(div().text_size(px(height * 0.38)).text_color(t.soft).child(unit))
 }
 
@@ -131,6 +165,18 @@ pub fn figure(bytes: u64, height: f32, t: &Theme) -> Div {
 /// Pressing it never moves the window, even inside a drag handle.
 pub fn button(id: &'static str, text: impl Into<gpui::SharedString>, primary: bool, t: &Theme) -> Stateful<Div> {
     let accent = t.accent;
+    base_button(id, text)
+        .when(primary, |d| d.bg(t.ink).text_color(t.panel).hover(move |s| s.bg(accent)))
+        .when(!primary, |d| d.border_1().border_color(t.ink.opacity(0.75)).hover(move |s| s.border_color(accent).text_color(accent)))
+}
+
+/// The button of what cannot be undone: outlined in the danger colour, filled with it under the pointer.
+pub fn danger_button(id: &'static str, text: impl Into<gpui::SharedString>, t: &Theme) -> Stateful<Div> {
+    let (danger, on) = (t.danger, t.panel);
+    base_button(id, text).border_1().border_color(danger).text_color(danger).hover(move |s| s.bg(danger).text_color(on))
+}
+
+fn base_button(id: &'static str, text: impl Into<gpui::SharedString>) -> Stateful<Div> {
     div()
         .id(id)
         .debug_selector(move || id.into())
@@ -142,8 +188,6 @@ pub fn button(id: &'static str, text: impl Into<gpui::SharedString>, primary: bo
         .text_size(px(13.))
         .font_weight(FontWeight::MEDIUM)
         .cursor_pointer()
-        .when(primary, |d| d.bg(t.ink).text_color(t.panel).hover(move |s| s.bg(accent)))
-        .when(!primary, |d| d.border_1().border_color(t.ink.opacity(0.75)).hover(move |s| s.border_color(accent).text_color(accent)))
         .on_mouse_down(MouseButton::Left, |_, _, cx| cx.stop_propagation())
         .child(text.into())
 }

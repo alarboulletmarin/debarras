@@ -2,9 +2,9 @@
 
 ## The start screen
 
-The first time, Débarras opens on three choices:
+The first time, Débarras says in three lines what it does (scan, choose, free) and what its two patterns mean, then offers three choices:
 
-- **Scan** followed by your home folder: the usual place where space goes.
+- **Scan my home folder**: the usual place where space goes.
 - **Choose a folder…** (`Ctrl+O`, `Cmd+O` on macOS): any folder, an external disk, a project.
 - **See the demo**: a made-up home folder, to look around without waiting. Nothing on your disk is read.
 
@@ -26,33 +26,35 @@ A folder Débarras cannot read does not stop the scan: it is skipped, and the pa
 
 ## Look, open, go back
 
-- **Hover** a plot to see its name, size and share of the folder in the title block below the plan.
-- **Click** a folder to open it. The path above the plan shows where you are; click any part of it to go back there.
+- **Hover** a block to see, in the info bar below the plan, its name, size, share of the folder, family, verdict (**Safe to remove**, **Check first**, **Keep**), what freeing it does, and what a click would do.
+- **Click** a folder to open it. The path above the plan shows where you are; click any part of it to go back there, or **← Up** to go back one level.
 - **Go back** with `Esc`, `Backspace` or a right click.
 - **Press `O`** to show the hovered item in your file manager.
 
-## Tick what can go
+## Choose what goes
 
-Click a hatched or dotted plot to tick it. The panel adds it to **Ticked to free**, with the share of the disk it represents. Click it again to untick it. What can go without loss is ticked from the start.
+The three steps, **Scan → Choose → Free**, stay at the top of the panel, the current one in ink. Under them, the panel answers first: **You can free**, the total selected, with a gauge of it (hatched for what is safe to remove, dotted for what to check first). Right after a scan it says how many safe items were selected for you; untick what you keep. The space used comes next.
+
+Click a hatched or dotted block to select it; click it again to unselect it.
 
 The panel has two lists:
 
-- **Suggestions**: every plot Débarras marked.
-- **Ticked**: everything you ticked, wherever it is in the folder. A folder ticked covers what it holds: an item inside it is not counted twice.
+- **What you can free**: every block Débarras marked.
+- **Selected**: everything you selected, wherever it is in the folder. A folder ticked covers what it holds: an item inside it is not counted twice.
 
-Both are trees, largest first: the items are grouped under the folders that hold them, closed, with their size and how many items they hold. Click a folder's line to open or close it. Its box ticks everything it holds, or unticks it all when everything is ticked; a dash in the box means some of it is. Click an item's line to tick or untick it.
+Both are trees, largest first: the items are grouped under the folders that hold them, closed, with their size and how many items they hold. Hovering a line outlines its block on the plan. Click a folder's line to open or close it. Its box ticks everything it holds, or unticks it all when everything is ticked; a dash in the box means some of it is. Click an item's line to tick or untick it.
 
-**Why?**, by the lists, or a click on the legend, explains how the suggestions are chosen: every rule, and its reason. The [rules page](rules.md) lists them too.
+**Why?**, by the lists, or a click on the legend above the plan, explains how the suggestions are chosen: every rule, and its reason. The [rules page](rules.md) lists them too.
 
 ## Free it
 
-Click **Free**. A summary lists every ticked item, its place on the disk and its size, with the total. Then choose:
+Click **Free**. A summary gives the total, then the items grouped by verdict, **Safe to remove** then **Check first**, each group with its subtotal, every item with its place on the disk and its size. Then choose:
 
 - **Move to the trash**: the items go to the system's trash, where you can still get them back. The room comes back only once the trash is emptied.
 - **Delete for good**: the room comes back at once. There is no way back.
 - **Cancel** (or `Esc`): nothing happens.
 
-The plan follows at once, without a new scan, and the panel says what was freed. An item that could not be freed, because it is gone or you may not delete it, stays ticked, and the panel says why.
+The plan follows at once, without a new scan, and the panel says what was freed. An item that could not be freed, because it is gone or you may not delete it, stays selected, and the panel says why.
 
 The trash itself (`.local/share/Trash`, `.Trash`) can only be deleted for good: that is how a trash is emptied.
 

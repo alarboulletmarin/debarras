@@ -9,12 +9,12 @@ Every line of the help panel (`F1`), with the keys of Linux and Windows. On macO
 
 | Keys | Action |
 |---|---|
-| Click | Open a folder; tick or untick a plot that can be freed |
-| `Esc` / `Backspace` | Back to the parent folder (also a right click, or the path above the plan) |
+| Click | Open a folder; select or unselect a block that can be freed |
+| `Esc` / `Backspace` | Back to the parent folder (also a right click, the Up button or the path above the plan) |
 | `O` | Show the hovered item in the file manager |
-| Hatching | Can go without loss: rebuilt or downloaded again when needed |
-| Dots | Large, to review: you judge |
-| Free | Sums up what is ticked, then moves it to the trash or deletes it for good |
+| Hatching | Safe to remove: rebuilt or downloaded again on its own |
+| Dots | Check first: large, yours to judge |
+| Free | Sums up what is selected, then moves it to the trash or deletes it for good |
 
 ## Folders
 

@@ -42,6 +42,12 @@ pub struct Theme {
     pub rule: Hsla,
     /// The hovered plot and the hovered button: drawn, so 3:1 on the paper and the panel.
     pub accent: Hsla,
+    /// The word « Safe to remove » and its tag's outline; never a fill. Blue-green, off the red/green axis.
+    pub safe: Hsla,
+    /// The word « Check first » and its tag's outline; never a fill. Ochre.
+    pub review: Hsla,
+    /// Only for what cannot be undone (deleting for good): never the hover's colour.
+    pub danger: Hsla,
     /// The tint of each family, in the order of `Category::ALL`.
     pub tints: [Hsla; Category::ALL.len()],
 }
@@ -73,7 +79,10 @@ impl Theme {
             .find(|c| grounds.iter().all(|g| contrast(*c, *g) >= 4.5))
             .unwrap_or(ink);
         let accent = [paper, panel].iter().fold(accent, |c, g| reach(c, *g, 3.));
-        Self { name, dark, paper, panel, ink, soft, rule, accent, tints }
+        // The house values on the house themes; on the others, the same hues made legible on every ground.
+        let [safe, review, danger] = (if dark { [0x86c5c4, 0xe3ad5f, 0xff8a7a] } else { [0x2c6a70, 0x7a4f0f, 0xb3261e] })
+            .map(|c| grounds.iter().fold(Hsla::from(rgb(c)), |c, g| legible(c, *g)));
+        Self { name, dark, paper, panel, ink, soft, rule, accent, safe, review, danger, tints }
     }
 
     pub fn tint(&self, category: Category) -> Hsla {
@@ -139,8 +148,12 @@ mod tests {
             for (ground, what) in [(t.paper, "paper"), (t.panel, "panel")].into_iter().chain(t.tints.iter().map(|g| (*g, "tint"))) {
                 assert!(contrast(t.ink, ground) >= 4.5, "{name}: ink on {what} {:.2}", contrast(t.ink, ground));
                 assert!(contrast(t.soft, ground) >= 4.5, "{name}: soft on {what} {:.2}", contrast(t.soft, ground));
+                for (word, c) in [("safe", t.safe), ("review", t.review), ("danger", t.danger)] {
+                    assert!(contrast(c, ground) >= 4.5, "{name}: {word} on {what} {:.2}", contrast(c, ground));
+                }
             }
             assert!(contrast(t.accent, t.paper) >= 3. && contrast(t.accent, t.panel) >= 3., "{name}: accent");
+            assert!(t.danger != t.accent && t.safe != t.review, "{name}: a hover looks like a danger");
             assert!(contrast(t.paper, t.panel) >= 1.02, "{name}: panel and paper look the same");
             for (i, tint) in t.tints.iter().enumerate().take(Category::ALL.len() - 1) {
                 assert!(*tint != t.paper, "{name}: family {i} has no tint");

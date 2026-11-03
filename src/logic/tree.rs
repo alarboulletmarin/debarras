@@ -58,6 +58,17 @@ pub enum Reclaim {
     Safe,
 }
 
+impl Reclaim {
+    /// The word that doubles the pattern, so that the plan reads without a legend.
+    pub fn label(self) -> &'static str {
+        match self {
+            Reclaim::Safe => tr("Safe to remove", "Sans risque"),
+            Reclaim::Review => tr("Check first", "À vérifier"),
+            Reclaim::No => tr("Keep", "À garder"),
+        }
+    }
+}
+
 /// What a node stands for on disk.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Kind {

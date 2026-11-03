@@ -67,12 +67,12 @@ pub fn help_sections() -> Vec<(&'static str, Vec<Row>)> {
         (
             tr("The plan", "Le plan"),
             vec![
-                g(tr("Click", "Clic"), tr("Open a folder; tick or untick a plot that can be freed", "Ouvrir un dossier ; cocher ou décocher une parcelle libérable")),
-                k(&Up, tr("Back to the parent folder (also a right click, or the path above the plan)", "Remonter au dossier parent (aussi le clic droit, ou le chemin au-dessus du plan)")),
+                g(tr("Click", "Clic"), tr("Open a folder; select or unselect a block that can be freed", "Ouvrir un dossier ; sélectionner ou désélectionner un bloc libérable")),
+                k(&Up, tr("Back to the parent folder (also a right click, the Up button or the path above the plan)", "Remonter au dossier parent (aussi le clic droit, le bouton Remonter ou le chemin au-dessus du plan)")),
                 k(&Reveal, tr("Show the hovered item in the file manager", "Montrer l'élément survolé dans le gestionnaire de fichiers")),
-                g(tr("Hatching", "Hachures"), tr("Can go without loss: rebuilt or downloaded again when needed", "Libérable sans perte : reconstruit ou retéléchargé au besoin")),
-                g(tr("Dots", "Pointillés"), tr("Large, to review: you judge", "Volumineux, à examiner : à vous de juger")),
-                g(tr("Free", "Libérer"), tr("Sums up what is ticked, then moves it to the trash or deletes it for good", "Récapitule ce qui est coché, puis le met à la corbeille ou le supprime définitivement")),
+                g(tr("Hatching", "Hachures"), tr("Safe to remove: rebuilt or downloaded again on its own", "Sans risque : se reconstruit ou se retélécharge tout seul")),
+                g(tr("Dots", "Pointillés"), tr("Check first: large, yours to judge", "À vérifier : volumineux, à vous de juger")),
+                g(tr("Free", "Libérer"), tr("Sums up what is selected, then moves it to the trash or deletes it for good", "Résume ce qui est sélectionné, puis le met à la corbeille ou le supprime définitivement")),
             ],
         ),
         (
