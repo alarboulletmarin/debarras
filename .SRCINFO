@@ -17,6 +17,6 @@ pkgbase = debarras
 	optdepends = vulkan-driver: a Vulkan driver for your GPU is required to open the window
 	options = !debug
 	source = debarras-0.1.0.tar.gz::https://github.com/alarboulletmarin/debarras/archive/refs/tags/v0.1.0.tar.gz
-	sha256sums = SKIP
+	sha256sums = 2bb0a7b530029c64c0a3adce051c9fb31d8f53fe327f147287fe8a853498895f
 
 pkgname = debarras
